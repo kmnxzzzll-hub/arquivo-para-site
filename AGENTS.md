@@ -36,5 +36,5 @@ use the editor.
 - Statistics are pure functions in src/lib/stats.ts (tested); never present random numbers as predictions. Why: owner requires honest, documented methods.
 - Displayed probabilities use largest-remainder rounding to integer tenths in the statistics module. Why: visible percentages must total exactly 100% without falsifying estimates.
 - The home cards highlight the larger of red/blue via a tested pure function in the statistics module; no random outcome is shown. Why: owner removed simulated signals.
-- The panel has no trend map/grid (owner removed it); src/lib/road.ts and the admin socket URL setting (`private_settings`, readable only by active users) are kept unused for a possible return. Why: the URL contains a session and must not be public like `app_settings`.
+- The panel has no trend map/grid (owner removed it); /painel reads the admin socket URL from `private_settings` (active users only) and connects from the browser via `useLiveRoad`, showing live `bacbo.road` counts and sending the live history to `generateSignal`, which falls back to recorded rounds. Why: the URL contains a session and must not be public like `app_settings`.
 - Each generated signal is computed and stored server-side in `signals`; the panel shows the latest stored one on load. Why: the active signal must survive a page reload.
