@@ -26,14 +26,13 @@ export function useLiveRoad(url: string | undefined) {
       setStatus((s) => (s === "live" ? s : "connecting"));
       try { ws = new WebSocket(url); } catch { schedule(); return; }
       ws.onopen = () => {
-        attempts = 0;
         ping = setInterval(() => {
           if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ id: String(Date.now()), type: "metrics.ping", args: { t: Date.now() } }));
         }, PING_MS);
       };
       ws.onmessage = (e) => {
         const r = parseRoadMessage(typeof e.data === "string" ? e.data : "");
-        if (r) { setRoad(r); setStatus("live"); }
+        if (r) { attempts = 0; setRoad(r); setStatus("live"); }
       };
       ws.onclose = () => { clearInterval(ping); if (!closed) schedule(); };
       ws.onerror = () => ws?.close();
