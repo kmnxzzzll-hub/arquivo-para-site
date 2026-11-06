@@ -56,8 +56,8 @@
   --color-tie: var(--tie);
   --color-gold: var(--gold);
   --color-success: var(--success);
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -130,7 +130,8 @@
     font-family: var(--font-sans);
     min-height: 100vh;
   }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0.01em; }
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
 
 @utility panel {
@@ -153,6 +154,34 @@
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @utility animate-rise { animation: rise 0.45s ease-out both; }
 
+/* Indicador "Ao vivo": ponto vermelho sempre aceso com brilho a pulsar. */
+@keyframes live-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--banker) 70%, transparent), 0 0 6px 1px color-mix(in oklab, var(--banker) 60%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--banker) 0%, transparent), 0 0 12px 3px color-mix(in oklab, var(--banker) 45%, transparent); }
+}
+@utility live-dot {
+  background: var(--banker);
+  border-radius: 9999px;
+  animation: live-glow 1.8s ease-in-out infinite;
+}
+
+/* Comando do sinal com brilho da cor correspondente. */
+@keyframes signal-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+@utility signal-banker {
+  border-color: var(--banker);
+  background: color-mix(in oklab, var(--banker) 14%, transparent);
+  box-shadow: 0 0 0 1px var(--banker), 0 0 32px -6px color-mix(in oklab, var(--banker) 75%, transparent);
+  text-shadow: 0 0 18px color-mix(in oklab, var(--banker) 60%, transparent);
+  animation: signal-pulse 2.2s ease-in-out infinite;
+}
+@utility signal-player {
+  border-color: var(--player);
+  background: color-mix(in oklab, var(--player) 14%, transparent);
+  box-shadow: 0 0 0 1px var(--player), 0 0 32px -6px color-mix(in oklab, var(--player) 75%, transparent);
+  text-shadow: 0 0 18px color-mix(in oklab, var(--player) 60%, transparent);
+  animation: signal-pulse 2.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise { animation: none; }
+  .animate-rise, .signal-banker, .signal-player { animation: none; }
 }
