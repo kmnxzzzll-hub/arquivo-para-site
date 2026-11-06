@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateSignal, getLastSignal, getLiveConfig, type SignalDTO } from "@/lib/app.functions";
+import { generateSignal, getLiveConfig, type SignalDTO } from "@/lib/app.functions";
 import { useLiveRoad } from "@/hooks/use-live-road";
 import type { Outcome } from "@/lib/stats";
 
@@ -30,18 +30,16 @@ function withTimeout<T>(p: Promise<T>): Promise<T> {
 }
 
 function Painel() {
-  const qc = useQueryClient();
   const gen = useServerFn(generateSignal);
-  const lastFn = useServerFn(getLastSignal);
   const cfgFn = useServerFn(getLiveConfig);
-  const last = useQuery({ queryKey: ["last-signal"], queryFn: () => lastFn() });
   const cfg = useQuery({ queryKey: ["live-config"], queryFn: () => cfgFn(), staleTime: 60_000 });
   const live = useLiveRoad(cfg.data?.socketUrl);
   const [fresh, setFresh] = useState<SignalDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
-  const res = fresh ?? last.data ?? null;
+  // The panel always starts clean: a signal only appears after the user clicks the button.
+  const res = fresh;
 
   async function run() {
     if (busy.current) return;
@@ -56,7 +54,6 @@ function Painel() {
       const wait = WAIT_MS - (Date.now() - started);
       if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
       setFresh(r);
-      qc.setQueryData(["last-signal"], r);
     } catch {
       setError("Try again.");
     } finally {

@@ -10,3 +10,4 @@
 - [x] Admin: account form (username + password) + keep import
 - [x] Painel: entry card, GERAR NOVO SINAL, sober corners, tabular numbers, live table stats
 - [x] Removed Ganhos Totais block (panel + admin setting); whole UI translated to English
+- [x] Panel starts clean on every entry; no auto-loaded last signal
