@@ -127,7 +127,7 @@ function Painel() {
   );
 }
 
-function LiveStrip({ status, stats }: { status: ReturnType<typeof useLiveRoad>["status"]; stats?: { banker: number; player: number; tie: number } }) {
+function LiveStrip({ status, stats }: { status: ReturnType<typeof useLiveRoad>["status"]; stats: { banker: number; player: number; tie: number } | undefined }) {
   if (status === "off") return null;
   const label = status === "live" ? "Mesa ao vivo" : status === "connecting" ? "A ligar à mesa…" : "Mesa indisponível · rodadas gravadas";
   return (
