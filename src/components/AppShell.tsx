@@ -29,12 +29,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
           <span className="flex items-center gap-2 justify-self-start text-xs font-bold uppercase tracking-wide">
             <span aria-hidden className="live-dot h-2.5 w-2.5" />
-            Ao vivo
+            LIVE
           </span>
           <Link to="/painel" className="shrink-0 justify-self-center"><Logo className="w-24" /></Link>
           <div className="flex min-w-0 items-center justify-self-end gap-1">
-            {me.data?.isAdmin && <Link to="/admin" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold uppercase text-foreground hover:bg-secondary" aria-label="Administração"><Shield className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
-            <Button variant="ghost" size="icon" onClick={signOut} title="Terminar sessão" aria-label="Terminar sessão" className="shrink-0 text-muted-foreground"><LogOut className="h-5 w-5" /></Button>
+            {me.data?.isAdmin && <Link to="/admin" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold uppercase text-foreground hover:bg-secondary" aria-label="Administration"><Shield className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
+            <Button variant="ghost" size="icon" onClick={signOut} title="Sign out" aria-label="Sign out" className="shrink-0 text-muted-foreground"><LogOut className="h-5 w-5" /></Button>
           </div>
         </div>
       </header>
@@ -55,7 +55,7 @@ export function PageTitle({ title, subtitle }: { title: string; subtitle?: strin
 export function Disclaimer() {
   return (
     <p className="mt-6 text-center text-xs text-muted-foreground">
-      Os resultados anteriores não determinam rodadas futuras. Cada rodada é independente. Esta plataforma destina-se a análise estatística e não recomenda apostas.
+      Past results do not determine future rounds. Each round is independent. This platform is for statistical analysis and does not recommend bets.
     </p>
   );
 }

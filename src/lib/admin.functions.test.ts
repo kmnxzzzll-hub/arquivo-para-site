@@ -24,13 +24,13 @@ describe("acesso administrativo", () => {
   beforeEach(() => vi.clearAllMocks());
   it("recusa um utilizador sem papel admin antes de carregar privilégios", async () => {
     mocks.rpc.mockResolvedValue({ data: false, error: null });
-    await expect(overview({ context })).rejects.toThrow("Acesso negado.");
+    await expect(overview({ context })).rejects.toThrow("Access denied.");
     expect(mocks.rpc).toHaveBeenCalledWith("has_role", { _user_id: "current-user", _role: "admin" });
     expect(mocks.privilegedLoaded).not.toHaveBeenCalled();
   });
   it("não confunde falha de verificação com ausência de papel admin", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } });
-    await expect(overview({ context })).rejects.toThrow("Não foi possível verificar o acesso.");
+    await expect(overview({ context })).rejects.toThrow("Could not verify access.");
     expect(mocks.privilegedLoaded).not.toHaveBeenCalled();
   });
 });

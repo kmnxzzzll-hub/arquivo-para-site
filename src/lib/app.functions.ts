@@ -1,14 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DEFAULT_TOTAL_GAINS } from "./config";
 import { analyse, simulate, winnerFromSums, percentageInts, pickWinner, MIN_OBSERVATIONS, type Outcome } from "./stats";
 
 type Ctx = { supabase: any; userId: string };
 
 async function assertActive(ctx: Ctx) {
   const { data } = await ctx.supabase.from("profiles").select("active, username").eq("id", ctx.userId).maybeSingle();
-  if (!data?.active) throw new Error("Conta desativada.");
+  if (!data?.active) throw new Error("Account deactivated.");
   return data as { active: boolean; username: string };
 }
 
@@ -28,7 +27,7 @@ export const listRounds = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("rounds").select("id, winner, player_sum, banker_sum, source, created_at")
       .order("created_at", { ascending: false }).limit(500);
-    if (error) throw new Error("Não foi possível carregar as rodadas.");
+    if (error) throw new Error("Could not load the rounds.");
     return data as { id: string; winner: Outcome; player_sum: number | null; banker_sum: number | null; source: string; created_at: string }[];
   });
 
@@ -54,7 +53,7 @@ export const addRounds = createServerFn({ method: "POST" })
     });
     if (rows.length) {
       const { error } = await context.supabase.from("rounds").insert(rows);
-      if (error) throw new Error("Não foi possível guardar as rodadas.");
+      if (error) throw new Error("Could not save the rounds.");
     }
     return { inserted: rows.length, errors };
   });
@@ -77,25 +76,25 @@ export const generateAnalysis = createServerFn({ method: "POST" })
     let method: string;
     if (data.kind === "real") {
       const { data: rows, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(10000);
-      if (error) return { ok: false as const, error: "Não foi possível ler os dados." };
+      if (error) return { ok: false as const, error: "Could not read the data." };
       winners = (rows ?? []).map((r: { winner: string }) => r.winner as Outcome);
       if (winners.length < MIN_OBSERVATIONS)
-        return { ok: false as const, error: `Dados insuficientes: são necessárias pelo menos ${MIN_OBSERVATIONS} rodadas registadas (tens ${winners.length}).` };
-      method = "Frequência observada + estimativa bayesiana (Dirichlet, prior teórico de 30 rodadas) + qui-quadrado";
+        return { ok: false as const, error: `Not enough data: at least ${MIN_OBSERVATIONS} recorded rounds are needed (you have ${winners.length}).` };
+      method = "Observed frequency + Bayesian estimate (Dirichlet, theoretical prior of 30 rounds) + chi-square";
     } else {
       winners = simulate(data.simulations ?? 10000);
-      method = `Simulação Monte Carlo de ${winners.length} rodadas com dados equilibrados`;
+      method = `Monte Carlo simulation of ${winners.length} rounds with fair dice`;
     }
     const a = analyse(winners);
     const sum = a.estimate.player + a.estimate.tie + a.estimate.banker;
-    if (Math.abs(sum - 1) > 1e-9) return { ok: false as const, error: "Validação falhou: as probabilidades não somam 100%." };
+    if (Math.abs(sum - 1) > 1e-9) return { ok: false as const, error: "Validation failed: probabilities do not add up to 100%." };
     const row = {
       user_id: context.userId, kind: data.kind, method, observations: a.n,
       theoretical: a.theoretical, observed: { freq: a.observed, counts: a.counts, ci: a.ci }, estimate: a.estimate,
       chi2: a.chi2, p_value: a.pValue,
     };
     const { data: saved, error } = await context.supabase.from("analyses").insert(row).select().single();
-    if (error) return { ok: false as const, error: "Análise calculada mas não foi possível guardá-la." };
+    if (error) return { ok: false as const, error: "Analysis computed but could not be saved." };
     return { ok: true as const, analysis: saved as unknown as AnalysisRow };
   });
 
@@ -111,7 +110,7 @@ export const listAnalyses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertActive(context);
     const { data, error } = await context.supabase.from("analyses").select("*").order("created_at", { ascending: false }).limit(500);
-    if (error) throw new Error("Não foi possível carregar o histórico.");
+    if (error) throw new Error("Could not load the history.");
     return data as unknown as AnalysisRow[];
   });
 
@@ -125,10 +124,10 @@ export const changePassword = createServerFn({ method: "POST" })
     const c = createClient(process.env["SUPABASE_URL"]!, key, { auth: { persistSession: false } });
     const { usernameToEmail } = await import("./config");
     const { error } = await c.auth.signInWithPassword({ email: usernameToEmail(p.username), password: data.current });
-    if (error) return { ok: false as const, error: "A palavra-passe atual está incorreta." };
+    if (error) return { ok: false as const, error: "The current password is incorrect." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: e2 } = await supabaseAdmin.auth.admin.updateUserById(context.userId, { password: data.next });
-    if (e2) return { ok: false as const, error: "Não foi possível alterar a palavra-passe." };
+    if (e2) return { ok: false as const, error: "Could not change the password." };
     return { ok: true as const };
   });
 
@@ -153,19 +152,19 @@ export const generateSignal = createServerFn({ method: "POST" })
         return { user_id: context.userId, winner: winnerFromSums(p, b), player_sum: p, banker_sum: b, source: "import" };
       });
       const { error: e1 } = await context.supabase.from("rounds").insert(fresh);
-      if (e1) throw new Error("Não foi possível guardar as rodadas.");
+      if (e1) throw new Error("Could not save the rounds.");
       const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(300);
-      if (error) throw new Error("Não foi possível ler as rodadas.");
+      if (error) throw new Error("Could not read the rounds.");
       history = (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
     }
     const confidence = strategyConfidence(history);
     const ints = percentageInts(confidence);
-    if (ints.banker + ints.tie + ints.player !== 100) throw new Error("Validação falhou.");
+    if (ints.banker + ints.tie + ints.player !== 100) throw new Error("Validation failed.");
     const winner = pickWinner(confidence);
     const { data: saved, error: e3 } = await context.supabase
       .from("signals").insert({ user_id: context.userId, banker: ints.banker, tie: ints.tie, player: ints.player, winner })
       .select("banker, tie, player, winner, created_at").single();
-    if (e3 || !saved) throw new Error("Não foi possível guardar o sinal.");
+    if (e3 || !saved) throw new Error("Could not save the signal.");
     return toSignal(saved);
   });
 
@@ -191,7 +190,7 @@ export const recentWinners = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertActive(context);
     const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(40);
-    if (error) throw new Error("Não foi possível carregar as rodadas.");
+    if (error) throw new Error("Could not load the rounds.");
     return (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
   });
 
@@ -200,9 +199,6 @@ export const getLiveConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertActive(context);
-    const [{ data }, { data: gains }] = await Promise.all([
-      context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle(),
-      context.supabase.from("app_settings").select("value").eq("key", "total_gains").maybeSingle(),
-    ]);
-    return { socketUrl: (data?.value as string | undefined) ?? "", totalGains: (gains?.value as string | undefined) ?? DEFAULT_TOTAL_GAINS };
+    const { data } = await context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
+    return { socketUrl: (data?.value as string | undefined) ?? "" };
   });
