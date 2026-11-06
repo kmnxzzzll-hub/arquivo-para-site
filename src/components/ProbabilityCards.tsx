@@ -10,10 +10,10 @@ export function ProbabilityCards({ values, sub, highlight = true }: { values: Re
   const max = Math.max(...OUTCOMES.map((o) => values[o]));
   return (
     <div className="grid grid-cols-3 gap-3">
-      {OUTCOMES.map((o) => {
+      {OUTCOMES.map((o, i) => {
         const top = highlight && values[o] === max;
         return (
-          <div key={o} className={`animate-rise rounded-2xl border bg-secondary/60 px-2 py-4 text-center transition-all ${STYLE[o].border} ${top ? STYLE[o].glow : ""}`}>
+          <div key={o} style={{ "--d": `${i * 90}ms` } as React.CSSProperties} className={`apple-card apple-card-hover animate-rise-spring rounded-3xl px-2 py-4 text-center ${top ? `${STYLE[o].glow} card-sheen` : STYLE[o].border}`}>
             <div className={`font-display text-2xl font-extrabold sm:text-4xl ${top ? "text-foreground" : STYLE[o].text}`}>{pct(values[o])}</div>
             <div className={`mt-1 text-xs font-bold uppercase tracking-widest sm:text-sm ${STYLE[o].text}`}>{LABELS[o]}</div>
             {sub?.[o] && <div className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{sub[o]}</div>}
