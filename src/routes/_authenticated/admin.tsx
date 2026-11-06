@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { PageTitle } from "@/components/AppShell";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp, adminSetSocketUrl } from "@/lib/admin.functions";
+import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp, adminSetSocketUrl, adminTestSocket } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Administration — Bac Bo Live" }, { name: "description", content: "Private Bac Bo Live account management." }, { property: "og:title", content: "Administration — Bac Bo Live" }, { property: "og:description", content: "Private Bac Bo Live account management." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { name: "robots", content: "noindex" }] }),
@@ -29,6 +29,9 @@ function Admin() {
   const createFn = useServerFn(adminCreateAccounts);
   const waFn = useServerFn(adminSetWhatsapp);
   const sockFn = useServerFn(adminSetSocketUrl);
+  const testFn = useServerFn(adminTestSocket);
+  const [test, setTest] = useState<Awaited<ReturnType<typeof testFn>> | null>(null);
+  const testing = useMutation({ mutationFn: () => testFn({ data: { url: sock.trim() } }), onMutate: () => setTest(null), onSuccess: setTest, onError: () => toast.error("Could not run the test. Try again.") });
   const q = useQuery({ queryKey: ["admin"], queryFn: () => overviewFn(), retry: false, refetchInterval: 30_000 });
   const [wa, setWa] = useState("");
   const [csv, setCsv] = useState("");
@@ -156,10 +159,22 @@ function Admin() {
             <h2 className="mb-2 text-sm font-bold tracking-tight">Live table connection</h2>
             <textarea value={sock} onChange={(e) => setSock(e.target.value)} rows={3} placeholder="wss://…/public/bacbo/player/game/…/socket?messageFormat=json&…" className="w-full break-all rounded-md border border-input bg-secondary p-2 font-mono text-xs" aria-label="Live table connection" />
             <div className="mt-2 flex gap-2">
-              <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then(() => { toast.success(sock.trim() ? "Connection saved." : "Connection removed."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Invalid connection. It must start with wss://"))}>Save</Button>
+              <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then((r) => {
+                if (!r.ok) { setTest({ ok: false, problems: r.problems, message: null, stats: null }); toast.error("Not saved: the address has problems."); return; }
+                toast.success(sock.trim() ? "Connection saved." : "Connection removed."); refresh(); qc.invalidateQueries({ queryKey: ["live-road"] });
+              }).catch(() => toast.error("Could not save. Try again."))}>Save</Button>
+              <Button variant="secondary" disabled={testing.isPending || (!sock.trim() && !d.socketUrl)} onClick={() => testing.mutate()}>{testing.isPending ? <><Loader2 className="h-4 w-4 animate-spin" />Testing…</> : "Test connection"}</Button>
               {d.socketUrl && <Button variant="secondary" onClick={() => setSock("")}>Clear</Button>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Paste the full live table connection address (including the session). When the session expires or the table refuses the connection, the panel falls back to recorded rounds.</p>
+            {test && (
+              <div role="status" className={`mt-3 rounded-lg border p-3 text-xs ${test.ok ? "border-success/50 bg-success/10" : "border-destructive/50 bg-destructive/10"}`}>
+                <div className={`mb-1 font-bold ${test.ok ? "text-success" : "text-destructive"}`}>{test.ok ? "✅ Live table connected" : "❌ Live table not connected"}</div>
+                {test.problems.length > 0 && <ul className="list-disc space-y-0.5 pl-4">{test.problems.map((p) => <li key={p}>{p}</li>)}</ul>}
+                {test.message && <p>{test.message}</p>}
+                {test.stats && <p className="num mt-1 text-sm">🔴 {test.stats.banker} · 🔵 {test.stats.player} · 🟡 {test.stats.tie}</p>}
+              </div>
+            )}
           </section>
         </TabsContent>
 
