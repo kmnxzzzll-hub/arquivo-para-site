@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { PageTitle } from "@/components/AppShell";
-import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp } from "@/lib/admin.functions";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp, adminSetSocketUrl } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Administração — Bac Bo Live" }, { name: "description", content: "Gestão privada de contas Bac Bo Live." }, { property: "og:title", content: "Administração — Bac Bo Live" }, { property: "og:description", content: "Gestão privada de contas Bac Bo Live." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { name: "robots", content: "noindex" }] }),
@@ -25,11 +27,15 @@ function Admin() {
   const resetFn = useServerFn(adminResetPassword);
   const createFn = useServerFn(adminCreateAccounts);
   const waFn = useServerFn(adminSetWhatsapp);
+  const sockFn = useServerFn(adminSetSocketUrl);
   const q = useQuery({ queryKey: ["admin"], queryFn: () => overviewFn(), retry: false, refetchInterval: 30_000 });
   const [wa, setWa] = useState("");
   const [csv, setCsv] = useState("");
+  const [sock, setSock] = useState("");
+  const [newUser, setNewUser] = useState("");
+  const [newPass, setNewPass] = useState("");
   const [report, setReport] = useState<Awaited<ReturnType<typeof createFn>>["report"] | null>(null);
-  useEffect(() => { if (q.data) setWa(q.data.whatsapp); }, [q.data]);
+  useEffect(() => { if (q.data) { setWa(q.data.whatsapp); setSock(q.data.socketUrl); } }, [q.data]);
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin"] });
 
   const toggle = useMutation({ mutationFn: (v: { id: string; active: boolean }) => activeFn({ data: v }), onSuccess: refresh, onError: (e: Error) => toast.error(e.message) });
@@ -39,6 +45,16 @@ function Admin() {
       return createFn({ data: { accounts } });
     },
     onSuccess: (r) => { setReport(r.report); setCsv(""); refresh(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const createOne = useMutation({
+    mutationFn: () => createFn({ data: { accounts: [{ username: newUser.trim(), password: newPass }] } }),
+    onSuccess: (r) => {
+      const row = r.report[0];
+      if (row?.status === "criada") { toast.success(`Conta «${row.username}» criada.`); setNewUser(""); setNewPass(""); refresh(); }
+      else if (row?.status === "duplicada") toast.error("Esse utilizador já existe.");
+      else toast.error(row?.message ?? "Não foi possível criar a conta.");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -58,70 +74,106 @@ function Admin() {
     <>
       <PageTitle title="Administração" />
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[["Contas", d.users.length], ["Ativas", d.users.filter((u) => u.active).length], ["Rodadas", d.counts.rounds], ["Análises", d.counts.analyses]].map(([k, v]) => (
-          <div key={k} className="panel p-3 text-center"><div className="text-xs uppercase text-muted-foreground">{k}</div><div className="font-display text-xl font-bold">{v}</div></div>
+        {[["Contas", d.users.length], ["Ativas", d.users.filter((u) => u.active).length], ["Online", d.users.filter((u) => online(u.last_seen_at)).length], ["Rodadas", d.counts.rounds]].map(([k, v]) => (
+          <div key={k} className="panel p-3 text-center"><div className="text-xs font-semibold text-muted-foreground">{k}</div><div className="font-display text-xl font-extrabold tracking-tight">{v}</div></div>
         ))}
       </div>
-      <p className="mb-4 text-xs text-muted-foreground">Base de dados: <b className="text-success">operacional</b> · Autenticação: <b className={d.authOk ? "text-success" : "text-destructive"}>{d.authOk ? "operacional" : "com erro"}</b> · Fonte de dados externa: <b>não configurada</b> (sem API autorizada disponível)</p>
 
-      <section className="mb-6">
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-gold">Utilizadores · {d.users.filter((u) => online(u.last_seen_at)).length} online</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {d.users.map((u) => {
-            const on = online(u.last_seen_at);
-            return (
-              <div key={u.id} className={`panel flex flex-col gap-3 p-4 ${!u.active ? "opacity-60" : ""}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold">{u.username}</div>
-                    {u.isAdmin && <span className="text-xs font-bold uppercase text-gold">admin</span>}
+      <Tabs defaultValue="users" className="w-full">
+        <TabsList className="mb-4 grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-secondary p-1 sm:grid-cols-4">
+          <TabsTrigger value="users" className="rounded-lg py-2 font-semibold">Utilizadores</TabsTrigger>
+          <TabsTrigger value="accounts" className="rounded-lg py-2 font-semibold">Criar contas</TabsTrigger>
+          <TabsTrigger value="settings" className="rounded-lg py-2 font-semibold">Definições</TabsTrigger>
+          <TabsTrigger value="activity" className="rounded-lg py-2 font-semibold">Atividade</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {d.users.map((u) => {
+              const on = online(u.last_seen_at);
+              return (
+                <div key={u.id} className={`panel flex flex-col gap-3 p-4 ${!u.active ? "opacity-60" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold">{u.username}</div>
+                      {u.isAdmin && <span className="mt-1 inline-block rounded-full border border-border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground/80">admin</span>}
+                    </div>
+                    <span className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? "bg-success/15 text-success" : "bg-secondary text-muted-foreground"}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-success" : "bg-muted-foreground"}`} />{on ? "Online" : "Offline"}
+                    </span>
                   </div>
-                  <span className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${on ? "bg-success/15 text-success" : "bg-secondary text-muted-foreground"}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-success" : "bg-muted-foreground"}`} />{on ? "Online" : "Offline"}
-                  </span>
+                  <dl className="grid grid-cols-2 gap-1 text-xs">
+                    <dt className="text-muted-foreground">Último login</dt><dd className="text-right">{fmt(u.lastSignIn)}</dd>
+                    <dt className="text-muted-foreground">Última atividade</dt><dd className="text-right">{fmt(u.last_seen_at)}</dd>
+                    <dt className="text-muted-foreground">Conta</dt><dd className={`text-right font-semibold ${u.active ? "text-success" : "text-destructive"}`}>{u.active ? "Ativa" : "Desativada"}</dd>
+                  </dl>
+                  <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+                    <Switch checked={u.active} disabled={u.isAdmin || toggle.isPending} onCheckedChange={(v) => toggle.mutate({ id: u.id, active: v })} aria-label={`Ativar conta ${u.username}`} />
+                    <Button size="sm" variant="secondary" onClick={() => reset(u.id, u.username)}>Redefinir</Button>
+                  </div>
                 </div>
-                <dl className="grid grid-cols-2 gap-1 text-xs">
-                  <dt className="text-muted-foreground">Último login</dt><dd className="text-right">{fmt(u.lastSignIn)}</dd>
-                  <dt className="text-muted-foreground">Última atividade</dt><dd className="text-right">{fmt(u.last_seen_at)}</dd>
-                  <dt className="text-muted-foreground">Conta</dt><dd className={`text-right font-semibold ${u.active ? "text-success" : "text-destructive"}`}>{u.active ? "Ativa" : "Desativada"}</dd>
-                </dl>
-                <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-                  <Switch checked={u.active} disabled={u.isAdmin || toggle.isPending} onCheckedChange={(v) => toggle.mutate({ id: u.id, active: v })} aria-label={`Ativar conta ${u.username}`} />
-                  <Button size="sm" variant="secondary" onClick={() => reset(u.id, u.username)}>Redefinir</Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </TabsContent>
 
-      <section className="panel mb-6 p-4">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-gold">Criar / importar contas</h2>
-        <p className="mb-2 text-xs text-muted-foreground">Uma conta por linha: <code>utilizador;palavra-passe</code>. Duplicados são ignorados. As palavras-passe nunca são mostradas nem registadas.</p>
-        <textarea value={csv} onChange={(e) => setCsv(e.target.value)} rows={4} className="w-full rounded-md border border-input bg-secondary p-2 font-mono text-sm" />
-        <Button className="mt-2" disabled={!csv.trim() || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "A criar…" : "Criar contas"}</Button>
-        {report && <ul className="mt-3 text-xs">{report.map((r) => <li key={r.line} className={r.status === "criada" ? "text-success" : r.status === "duplicada" ? "text-gold" : "text-destructive"}>Linha {r.line} {r.username}: {r.status}{r.message ? ` — ${r.message}` : ""}</li>)}</ul>}
-      </section>
+        <TabsContent value="accounts" className="grid gap-4 md:grid-cols-2">
+          <form className="panel flex flex-col gap-3 p-4" onSubmit={(e) => { e.preventDefault(); createOne.mutate(); }}>
+            <h2 className="text-sm font-bold tracking-tight">Nova conta</h2>
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-user">Utilizador</Label>
+              <Input id="new-user" value={newUser} onChange={(e) => setNewUser(e.target.value)} autoComplete="off" autoCapitalize="none" placeholder="ex.: joao.silva" className="bg-secondary" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="new-pass">Palavra-passe</Label>
+              <Input id="new-pass" type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)} autoComplete="new-password" placeholder="Mínimo 10 caracteres" className="bg-secondary" />
+            </div>
+            <Button type="submit" disabled={newUser.trim().length < 3 || newPass.length < 10 || createOne.isPending}>{createOne.isPending ? "A criar…" : "Criar conta"}</Button>
+          </form>
 
-      <section className="panel mb-6 p-4">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-gold">Número do WhatsApp</h2>
-        <div className="flex gap-2">
-          <Input value={wa} onChange={(e) => setWa(e.target.value.replace(/\D/g, ""))} className="bg-secondary" inputMode="numeric" />
-          <Button onClick={() => waFn({ data: { number: wa } }).then(() => { toast.success("Número guardado."); refresh(); }).catch(() => toast.error("Número inválido."))}>Guardar</Button>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">Formato internacional sem «+», ex.: 244956125296.</p>
-      </section>
+          <div className="panel flex flex-col gap-2 p-4">
+            <h2 className="text-sm font-bold tracking-tight">Importar várias contas</h2>
+            <p className="text-xs text-muted-foreground">Uma conta por linha: <code>utilizador;palavra-passe</code>. Duplicados são ignorados. As palavras-passe nunca são mostradas nem registadas.</p>
+            <textarea value={csv} onChange={(e) => setCsv(e.target.value)} rows={5} className="w-full rounded-md border border-input bg-secondary p-2 font-mono text-sm" aria-label="Lista de contas a importar" />
+            <Button variant="secondary" disabled={!csv.trim() || create.isPending} onClick={() => create.mutate()}>{create.isPending ? "A importar…" : "Importar contas"}</Button>
+          </div>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="panel p-4">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-gold">Tentativas de login recentes</h2>
-          <ul className="max-h-64 overflow-auto text-xs">{d.attempts.map((a, i) => <li key={i} className="flex justify-between py-0.5"><span>{a.username}</span><span className={a.success ? "text-success" : "text-destructive"}>{a.success ? "sucesso" : "falha"}</span><span className="text-muted-foreground">{new Date(a.created_at).toLocaleString("pt-PT")}</span></li>)}</ul>
-        </div>
-        <div className="panel p-4">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-widest text-gold">Registo de operações</h2>
-          {d.logs.length ? <ul className="max-h-64 overflow-auto text-xs">{d.logs.map((l: any) => <li key={l.id} className="py-0.5">{new Date(l.created_at).toLocaleString("pt-PT")} — {l.action} {l.detail ?? ""}</li>)}</ul> : <p className="text-xs text-muted-foreground">Sem operações registadas.</p>}
-        </div>
-      </section>
+          {report && <ul className="panel p-4 text-xs md:col-span-2">{report.map((r) => <li key={r.line} className={r.status === "criada" ? "text-success" : r.status === "duplicada" ? "text-muted-foreground" : "text-destructive"}>Linha {r.line} {r.username}: {r.status}{r.message ? ` — ${r.message}` : ""}</li>)}</ul>}
+        </TabsContent>
+
+        <TabsContent value="settings" className="grid gap-4 md:grid-cols-2">
+          <section className="panel p-4">
+            <h2 className="mb-2 text-sm font-bold tracking-tight">Número do WhatsApp</h2>
+            <div className="flex gap-2">
+              <Input value={wa} onChange={(e) => setWa(e.target.value.replace(/\D/g, ""))} className="bg-secondary" inputMode="numeric" aria-label="Número do WhatsApp" />
+              <Button onClick={() => waFn({ data: { number: wa } }).then(() => { toast.success("Número guardado."); refresh(); }).catch(() => toast.error("Número inválido."))}>Guardar</Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Formato internacional sem «+», ex.: 244956125296.</p>
+          </section>
+
+          <section className="panel p-4">
+            <h2 className="mb-2 text-sm font-bold tracking-tight">Ligação da mesa ao vivo</h2>
+            <textarea value={sock} onChange={(e) => setSock(e.target.value)} rows={3} placeholder="wss://…/public/bacbo/player/game/…/socket?messageFormat=json&…" className="w-full break-all rounded-md border border-input bg-secondary p-2 font-mono text-xs" aria-label="Ligação da mesa ao vivo" />
+            <div className="mt-2 flex gap-2">
+              <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then(() => { toast.success(sock.trim() ? "Ligação guardada." : "Ligação removida."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Ligação inválida. Tem de começar por wss://"))}>Guardar</Button>
+              {d.socketUrl && <Button variant="secondary" onClick={() => setSock("")}>Limpar</Button>}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Cola o endereço completo da ligação da mesa (inclui a sessão). Quando a sessão expira ou a mesa recusa a ligação, o mapa de tendências usa as rodadas gravadas.</p>
+          </section>
+        </TabsContent>
+
+        <TabsContent value="activity" className="grid gap-4 md:grid-cols-2">
+          <p className="text-xs text-muted-foreground md:col-span-2">Base de dados: <b className="text-success">operacional</b> · Autenticação: <b className={d.authOk ? "text-success" : "text-destructive"}>{d.authOk ? "operacional" : "com erro"}</b> · Mesa ao vivo: <b>{d.socketUrl ? "configurada" : "não configurada"}</b> · Análises: <b>{d.counts.analyses}</b></p>
+          <div className="panel p-4">
+            <h2 className="mb-2 text-sm font-bold tracking-tight">Tentativas de login recentes</h2>
+            <ul className="max-h-72 overflow-auto text-xs">{d.attempts.map((a, i) => <li key={i} className="flex justify-between gap-2 py-0.5"><span>{a.username}</span><span className={a.success ? "text-success" : "text-destructive"}>{a.success ? "sucesso" : "falha"}</span><span className="text-muted-foreground">{new Date(a.created_at).toLocaleString("pt-PT")}</span></li>)}</ul>
+          </div>
+          <div className="panel p-4">
+            <h2 className="mb-2 text-sm font-bold tracking-tight">Registo de operações</h2>
+            {d.logs.length ? <ul className="max-h-72 overflow-auto text-xs">{d.logs.map((l: any) => <li key={l.id} className="py-0.5">{new Date(l.created_at).toLocaleString("pt-PT")} — {l.action} {l.detail ?? ""}</li>)}</ul> : <p className="text-xs text-muted-foreground">Sem operações registadas.</p>}
+          </div>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
