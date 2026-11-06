@@ -1,7 +1,7 @@
 // Motor estatístico do Bac Bo Live. Funções puras, sem dados inventados.
 export type Outcome = "player" | "tie" | "banker";
 export const OUTCOMES: Outcome[] = ["player", "tie", "banker"];
-export const LABELS: Record<Outcome, string> = { player: "Jogador", tie: "Empate", banker: "Banco" };
+export const LABELS: Record<Outcome, string> = { player: "Player", tie: "Tie", banker: "Banker" };
 export type Triple = Record<Outcome, number>;
 
 /** Uniform random demo color, independent of statistical estimates; not a prediction. */

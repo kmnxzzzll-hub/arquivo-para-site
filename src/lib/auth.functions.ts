@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { usernameToEmail, LOGIN_MAX_FAILS, LOGIN_WINDOW_MIN, DEFAULT_WHATSAPP } from "./config";
 
-const GENERIC = "Não foi possível iniciar sessão. Verifica os teus dados e tenta novamente.";
+const GENERIC = "Could not sign in. Check your details and try again.";
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
@@ -33,7 +33,7 @@ export const loginWithUsername = createServerFn({ method: "POST" })
         .from("login_attempts").select("id", { count: "exact", head: true })
         .eq("username", uname).eq("success", false).gte("created_at", since);
       if ((count ?? 0) >= LOGIN_MAX_FAILS)
-        return { ok: false as const, error: `Demasiadas tentativas. Aguarda ${LOGIN_WINDOW_MIN} minutos e tenta novamente.` };
+        return { ok: false as const, error: `Too many attempts. Wait ${LOGIN_WINDOW_MIN} minutes and try again.` };
 
       const { data: s, error } = await publicClient().auth.signInWithPassword({ email: uname.includes("@") ? uname : usernameToEmail(uname), password: data.password });
       let ok = !error && !!s.session;
@@ -46,7 +46,7 @@ export const loginWithUsername = createServerFn({ method: "POST" })
       return { ok: true as const, access_token: s.session.access_token, refresh_token: s.session.refresh_token };
     } catch (e) {
       console.error("login failure", e instanceof Error ? e.message : "unknown");
-      return { ok: false as const, error: "O serviço de autenticação está temporariamente indisponível. Tenta novamente." };
+      return { ok: false as const, error: "The sign-in service is temporarily unavailable. Try again." };
     }
   });
 
