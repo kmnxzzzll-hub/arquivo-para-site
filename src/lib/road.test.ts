@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Outcome } from "./stats";
 import { isValidSocketUrl, lastRounds, parseRoadMessage, roadCounts, winnerToOutcome } from "./road";
 
 describe("trend map / WebSocket road", () => {
@@ -30,8 +31,8 @@ describe("trend map / WebSocket road", () => {
   });
 
   it("keeps only the last 40 rounds, newest last", () => {
-    const h = Array.from({ length: 50 }, (_, i) => (i === 49 ? "tie" : "banker") as const);
-    const last = lastRounds([...h]);
+    const h: Outcome[] = Array.from({ length: 50 }, (_, i) => (i === 49 ? "tie" : "banker"));
+    const last = lastRounds(h);
     expect(last).toHaveLength(40);
     expect(last.at(-1)).toBe("tie");
     expect(roadCounts(last)).toEqual({ banker: 39, player: 0, tie: 1 });
