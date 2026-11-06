@@ -8,6 +8,13 @@
       "when": 1793926061016,
       "tag": "0000_bac_bo_live_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793928525560,
+      "tag": "0001_signals_and_private_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -122,6 +122,24 @@ export type Database = {
         }
         Relationships: []
       }
+      private_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           active: boolean
@@ -171,6 +189,36 @@ export type Database = {
           id?: string
           player_sum?: number | null
           source?: string
+          user_id?: string
+          winner?: string
+        }
+        Relationships: []
+      }
+      signals: {
+        Row: {
+          banker: number
+          created_at: string
+          id: string
+          player: number
+          tie: number
+          user_id: string
+          winner: string
+        }
+        Insert: {
+          banker: number
+          created_at?: string
+          id?: string
+          player: number
+          tie: number
+          user_id: string
+          winner: string
+        }
+        Update: {
+          banker?: number
+          created_at?: string
+          id?: string
+          player?: number
+          tie?: number
           user_id?: string
           winner?: string
         }
