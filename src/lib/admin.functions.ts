@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { usernameToEmail } from "./config";
-import { isValidSocketUrl } from "./road";
+import { diagnoseSocketUrl } from "./road";
 
 async function requireAdmin(ctx: { supabase: any; userId: string }) {
   const { data, error } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
@@ -115,11 +115,33 @@ export const adminSetWhatsapp = createServerFn({ method: "POST" })
 export const adminSetSocketUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ url: z.string().trim().max(4000).refine((u) => u === "" || isValidSocketUrl(u), "Invalid connection (must start with wss://)") }).parse(d))
+    z.object({ url: z.string().trim().max(4000) }).parse(d))
   .handler(async ({ data, context }) => {
     const admin = await requireAdmin(context);
+    const problems = data.url === "" ? [] : diagnoseSocketUrl(data.url);
+    if (problems.length) return { ok: false as const, problems };
     if (data.url === "") await admin.from("private_settings").delete().eq("key", "evo_socket_url");
     else await admin.from("private_settings").upsert({ key: "evo_socket_url", value: data.url, updated_at: new Date().toISOString() });
     await audit(admin, context.userId, "alterar_ligacao_mesa", data.url ? "configurada" : "removida");
-    return { ok: true };
+    return { ok: true as const, problems: [] as string[] };
+  });
+
+/** Checks a live table address (the one typed, or the saved one) and really connects from the server. */
+export const adminTestSocket = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ url: z.string().trim().max(4000) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const admin = await requireAdmin(context);
+    let url = data.url;
+    if (!url) {
+      const { data: row } = await admin.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
+      url = row?.value ?? "";
+    }
+    if (!url) return { ok: false as const, problems: ["No live table address has been entered."], message: null, stats: null };
+    const problems = diagnoseSocketUrl(url);
+    if (problems.length) return { ok: false as const, problems, message: null, stats: null };
+    const { probeLiveRoad, explainProbe } = await import("./live-probe.server");
+    const r = await probeLiveRoad(url);
+    await audit(admin, context.userId, "testar_ligacao_mesa", r.status === "kicked" ? `kicked:${r.reason}` : r.status);
+    return { ok: r.status === "live", problems: [] as string[], message: explainProbe(r), stats: r.status === "live" ? r.road.stats : null };
   });

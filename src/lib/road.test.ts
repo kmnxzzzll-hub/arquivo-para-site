@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Outcome } from "./stats";
-import { isValidSocketUrl, lastRounds, parseRoadMessage, roadCounts, winnerToOutcome } from "./road";
+import { diagnoseSocketUrl, isValidSocketUrl, lastRounds, parseKickout, parseRoadMessage, roadCounts, winnerToOutcome } from "./road";
 
 describe("trend map / WebSocket road", () => {
   it("maps Player to blue (player), Banker to red (banker) and Tie to tie", () => {
@@ -42,5 +42,34 @@ describe("trend map / WebSocket road", () => {
     expect(isValidSocketUrl("wss://example.com/socket?x=1")).toBe(true);
     expect(isValidSocketUrl("ws://example.com")).toBe(false);
     expect(isValidSocketUrl("https://example.com")).toBe(false);
+  });
+
+  const base = "wss://5dhbt5lk.example.link/public/bacbo/player/game/PorBacBo00000001/socket?messageFormat=json&tableConfig=abc";
+  const realSession = "twmi4gabfh5qsguxugxg7ellcgqbdmmqcd01575a635d827f720bb3f9b2d305b6a698411e286c8dca";
+
+  it("accepts a complete table address with a real EVOSESSIONID", () => {
+    expect(diagnoseSocketUrl(`${base}&EVOSESSIONID=${realSession}&instance=x`)).toEqual([]);
+  });
+
+  it("flags the misspelled EVOSSESSIONID parameter", () => {
+    const p = diagnoseSocketUrl(`${base}&EVOSSESSIONID=${realSession}`);
+    expect(p).toHaveLength(1);
+    expect(p[0]).toContain("misspelled");
+  });
+
+  it("flags a placeholder session such as [TOKEN DE SESSÃO]", () => {
+    const p = diagnoseSocketUrl(`${base}&EVOSESSIONID=${encodeURIComponent("[TOKEN DE SESSÃO]")}`);
+    expect(p).toHaveLength(1);
+    expect(p[0]).toContain("placeholder");
+  });
+
+  it("flags a missing session and a non-wss address", () => {
+    expect(diagnoseSocketUrl(base)[0]).toContain("missing");
+    expect(diagnoseSocketUrl(`https://x.link/socket?EVOSESSIONID=${realSession}`)[0]).toContain("wss://");
+  });
+
+  it("reads the kickout reason sent when the casino rejects the session", () => {
+    expect(parseKickout(JSON.stringify({ type: "connection.kickout", args: { reason: "notAuthorised" } }))).toBe("notAuthorised");
+    expect(parseKickout(JSON.stringify({ type: "bacbo.road", args: {} }))).toBeNull();
   });
 });
