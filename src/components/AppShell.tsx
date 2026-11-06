@@ -26,14 +26,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen pb-8">
       <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto grid max-w-5xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:flex">
-          <Link to="/painel" className="shrink-0"><Logo className="w-24" /></Link>
-          <div className="ml-auto flex min-w-0 items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <span className={`h-2 w-2 rounded-full ${me.isError ? "bg-destructive" : "animate-pulse bg-banker"}`} />
-              Ao vivo
-            </span>
-            {me.data?.isAdmin && <Link to="/admin" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold uppercase text-gold hover:bg-secondary" aria-label="Administração"><Shield className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
+        <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
+          <span className="flex items-center gap-2 justify-self-start text-xs font-bold uppercase tracking-wide">
+            <span aria-hidden className="live-dot h-2.5 w-2.5" />
+            Ao vivo
+          </span>
+          <Link to="/painel" className="shrink-0 justify-self-center"><Logo className="w-24" /></Link>
+          <div className="flex min-w-0 items-center justify-self-end gap-1">
+            {me.data?.isAdmin && <Link to="/admin" className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold uppercase text-foreground hover:bg-secondary" aria-label="Administração"><Shield className="h-5 w-5" /><span className="hidden sm:inline">Admin</span></Link>}
             <Button variant="ghost" size="icon" onClick={signOut} title="Terminar sessão" aria-label="Terminar sessão" className="shrink-0 text-muted-foreground"><LogOut className="h-5 w-5" /></Button>
           </div>
         </div>
