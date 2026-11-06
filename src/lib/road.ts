@@ -56,6 +56,42 @@ export function parseRoadMessage(raw: string | unknown): Road | null {
   };
 }
 
+/** Motivo de um evento "connection.kickout" da mesa (ex.: "notAuthorised"), ou null. */
+export function parseKickout(raw: string | unknown): string | null {
+  let msg: any = raw;
+  if (typeof raw === "string") {
+    try { msg = JSON.parse(raw); } catch { return null; }
+  }
+  if (!msg || typeof msg !== "object" || msg.type !== "connection.kickout") return null;
+  const reason = msg.args?.reason;
+  return typeof reason === "string" && reason ? reason : "unknown";
+}
+
+const SESSION_KEY = "EVOSESSIONID";
+
+/**
+ * Verifica o endereço da mesa antes de ligar. Devolve os problemas encontrados (vazio = pronto a testar):
+ * protocolo, caminho /socket, parâmetro EVOSESSIONID em falta/mal escrito e sessão de exemplo em vez da real.
+ */
+export function diagnoseSocketUrl(raw: string): string[] {
+  const problems: string[] = [];
+  let u: URL;
+  try { u = new URL(raw.trim()); } catch { return ["This is not a valid address. Paste the full wss://… address copied from the open game."]; }
+  if (u.protocol !== "wss:") problems.push("The address must start with wss://");
+  if (!/\/socket\/?$/.test(u.pathname)) problems.push("This does not look like a table socket address (it should end in /socket).");
+  const keys = [...u.searchParams.keys()];
+  const session = u.searchParams.get(SESSION_KEY);
+  if (session === null) {
+    const typo = keys.find((k) => k.toUpperCase() !== SESSION_KEY && /^EVO+S+E+S+I+O+N+I+D$/i.test(k));
+    problems.push(typo
+      ? `The session parameter is misspelled ("${typo}"). It must be exactly ${SESSION_KEY}.`
+      : `The game session (${SESSION_KEY}) is missing from the address.`);
+  } else if (session.length < 20 || /[\[\]\s{}<>]|token|sess/i.test(session)) {
+    problems.push(`The ${SESSION_KEY} value is a placeholder, not a real session. Copy the full address from the open game.`);
+  }
+  return problems;
+}
+
 /** Só aceita ligações seguras (wss://) para a configuração da mesa. */
 export function isValidSocketUrl(url: string): boolean {
   try {
