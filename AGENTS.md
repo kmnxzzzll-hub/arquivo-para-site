@@ -28,3 +28,11 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Bac Bo Live
+- Login is username-only: usernames map to synthetic emails via `usernameToEmail` in src/lib/config.ts; public signup is disabled. Why: owner issues fixed private accounts.
+- Login goes through the `loginWithUsername` server fn (rate limit + active check) and the client calls `setSession`. Why: server-side throttling and deactivation enforcement.
+- Admin operations live in src/lib/admin.functions.ts and must check `has_role(...,'admin')` before loading supabaseAdmin. Why: privileges are verified server-side only.
+- Statistics are pure functions in src/lib/stats.ts (tested); never present random numbers as predictions. Why: owner requires honest, documented methods.
+- Displayed probabilities use largest-remainder rounding to integer tenths in the statistics module. Why: visible percentages must total exactly 100% without falsifying estimates.
+- The home cards highlight the larger of red/blue via a tested pure function in the statistics module; no random outcome is shown. Why: owner removed simulated signals.
