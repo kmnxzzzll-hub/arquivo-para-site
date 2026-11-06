@@ -158,7 +158,7 @@ function Admin() {
           <section className="panel p-4">
             <h2 className="mb-2 text-sm font-bold tracking-tight">Live table connection</h2>
             <textarea value={sock} onChange={(e) => setSock(e.target.value)} rows={3} placeholder="wss://…/public/bacbo/player/game/…/socket?messageFormat=json&…" className="w-full break-all rounded-md border border-input bg-secondary p-2 font-mono text-xs" aria-label="Live table connection" />
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then((r) => {
                 if (!r.ok) { setTest({ ok: false, problems: r.problems, message: null, stats: null }); toast.error("Not saved: the address has problems."); return; }
                 toast.success(sock.trim() ? "Connection saved." : "Connection removed."); refresh(); qc.invalidateQueries({ queryKey: ["live-road"] });
