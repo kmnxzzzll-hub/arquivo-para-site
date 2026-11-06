@@ -14,16 +14,202 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analyses: {
+        Row: {
+          chi2: number | null
+          created_at: string
+          estimate: Json
+          id: string
+          kind: string
+          method: string
+          observations: number
+          observed: Json
+          p_value: number | null
+          status: string
+          theoretical: Json
+          user_id: string
+        }
+        Insert: {
+          chi2?: number | null
+          created_at?: string
+          estimate: Json
+          id?: string
+          kind: string
+          method: string
+          observations: number
+          observed: Json
+          p_value?: number | null
+          status?: string
+          theoretical: Json
+          user_id: string
+        }
+        Update: {
+          chi2?: number | null
+          created_at?: string
+          estimate?: Json
+          id?: string
+          kind?: string
+          method?: string
+          observations?: number
+          observed?: Json
+          p_value?: number | null
+          status?: string
+          theoretical?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          detail: string | null
+          id: number
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: number
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: number
+        }
+        Relationships: []
+      }
+      login_attempts: {
+        Row: {
+          created_at: string
+          id: number
+          success: boolean
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          success: boolean
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          success?: boolean
+          username?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          username: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id: string
+          last_seen_at?: string | null
+          username: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
+      rounds: {
+        Row: {
+          banker_sum: number | null
+          created_at: string
+          id: string
+          player_sum: number | null
+          source: string
+          user_id: string
+          winner: string
+        }
+        Insert: {
+          banker_sum?: number | null
+          created_at?: string
+          id?: string
+          player_sum?: number | null
+          source?: string
+          user_id: string
+          winner: string
+        }
+        Update: {
+          banker_sum?: number | null
+          created_at?: string
+          id?: string
+          player_sum?: number | null
+          source?: string
+          user_id?: string
+          winner?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      touch_last_seen: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +336,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
