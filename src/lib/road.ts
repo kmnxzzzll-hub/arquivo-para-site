@@ -80,12 +80,11 @@ export function diagnoseSocketUrl(raw: string): string[] {
   if (u.protocol !== "wss:") problems.push("The address must start with wss://");
   if (!/\/socket\/?$/.test(u.pathname)) problems.push("This does not look like a table socket address (it should end in /socket).");
   const keys = [...u.searchParams.keys()];
-  const session = u.searchParams.get(SESSION_KEY);
+  const typo = u.searchParams.has(SESSION_KEY) ? undefined : keys.find((k) => /^EVO+S+E+S+I+O+N+I+D$/i.test(k));
+  const session = u.searchParams.get(typo ?? SESSION_KEY);
+  if (typo) problems.push(`The session parameter is misspelled ("${typo}"). It must be exactly ${SESSION_KEY}.`);
   if (session === null) {
-    const typo = keys.find((k) => k.toUpperCase() !== SESSION_KEY && /^EVO+S+E+S+I+O+N+I+D$/i.test(k));
-    problems.push(typo
-      ? `The session parameter is misspelled ("${typo}"). It must be exactly ${SESSION_KEY}.`
-      : `The game session (${SESSION_KEY}) is missing from the address.`);
+    problems.push(`The game session (${SESSION_KEY}) is missing from the address.`);
   } else if (session.length < 20 || /[\[\]\s{}<>]|token|sess/i.test(session)) {
     problems.push(`The ${SESSION_KEY} value is a placeholder, not a real session. Copy the full address from the open game.`);
   }
