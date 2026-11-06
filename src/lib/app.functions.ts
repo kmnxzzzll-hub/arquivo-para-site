@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { analyse, simulate, winnerFromSums, MIN_OBSERVATIONS, type Outcome } from "./stats";
+import { analyse, simulate, winnerFromSums, percentageInts, pickWinner, MIN_OBSERVATIONS, type Outcome } from "./stats";
 
 type Ctx = { supabase: any; userId: string };
 
@@ -147,5 +147,48 @@ export const generateSignal = createServerFn({ method: "POST" })
     const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(300);
     if (error) throw new Error("Não foi possível ler as rodadas.");
     const history = (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
-    return { confidence: strategyConfidence(history), n: history.length };
+    const confidence = strategyConfidence(history);
+    const ints = percentageInts(confidence);
+    if (ints.banker + ints.tie + ints.player !== 100) throw new Error("Validação falhou.");
+    const winner = pickWinner(confidence);
+    const { data: saved, error: e3 } = await context.supabase
+      .from("signals").insert({ user_id: context.userId, banker: ints.banker, tie: ints.tie, player: ints.player, winner })
+      .select("banker, tie, player, winner, created_at").single();
+    if (e3 || !saved) throw new Error("Não foi possível guardar o sinal.");
+    return toSignal(saved);
+  });
+
+export type SignalDTO = { ints: { banker: number; tie: number; player: number }; winner: "banker" | "player"; created_at: string };
+function toSignal(r: { banker: number; tie: number; player: number; winner: string; created_at: string }): SignalDTO {
+  return { ints: { banker: r.banker, tie: r.tie, player: r.player }, winner: r.winner === "player" ? "player" : "banker", created_at: r.created_at };
+}
+
+/** Último sinal guardado do utilizador (para mostrar ao recarregar a página). */
+export const getLastSignal = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertActive(context);
+    const { data } = await context.supabase
+      .from("signals").select("banker, tie, player, winner, created_at")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return data ? toSignal(data) : null;
+  });
+
+/** Últimas rodadas gravadas (mais antiga → mais recente), usadas quando a ligação ao vivo não está disponível. */
+export const recentWinners = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertActive(context);
+    const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(40);
+    if (error) throw new Error("Não foi possível carregar as rodadas.");
+    return (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
+  });
+
+/** Ligação da mesa ao vivo configurada pelo administrador (só utilizadores ativos). */
+export const getLiveConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertActive(context);
+    const { data } = await context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
+    return { socketUrl: (data?.value as string | undefined) ?? "" };
   });

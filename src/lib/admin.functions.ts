@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { usernameToEmail } from "./config";
+import { isValidSocketUrl } from "./road";
 
 async function requireAdmin(ctx: { supabase: any; userId: string }) {
   const { data, error } = await ctx.supabase.rpc("has_role", { _user_id: ctx.userId, _role: "admin" });
@@ -19,7 +20,7 @@ export const adminOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await requireAdmin(context);
-    const [{ data: profiles }, { data: roles }, list, { data: logs }, { count: rounds }, { count: analyses }, { data: setting }, { data: attempts }] =
+    const [{ data: profiles }, { data: roles }, list, { data: logs }, { count: rounds }, { count: analyses }, { data: setting }, { data: attempts }, { data: socket }] =
       await Promise.all([
         admin.from("profiles").select("id, username, active, created_at, last_seen_at").order("username"),
         admin.from("user_roles").select("user_id, role"),
@@ -29,6 +30,7 @@ export const adminOverview = createServerFn({ method: "GET" })
         admin.from("analyses").select("id", { count: "exact", head: true }),
         admin.from("app_settings").select("value").eq("key", "whatsapp_number").maybeSingle(),
         admin.from("login_attempts").select("username, success, created_at").order("created_at", { ascending: false }).limit(30),
+        admin.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle(),
       ]);
     const lastSign = new Map((list.data?.users ?? []).map((u: any) => [u.id, u.last_sign_in_at as string | null]));
     return {
@@ -41,6 +43,7 @@ export const adminOverview = createServerFn({ method: "GET" })
       attempts: attempts ?? [],
       counts: { rounds: rounds ?? 0, analyses: analyses ?? 0 },
       whatsapp: setting?.value ?? "",
+      socketUrl: socket?.value ?? "",
       authOk: !list.error,
     };
   });
@@ -106,5 +109,17 @@ export const adminSetWhatsapp = createServerFn({ method: "POST" })
     const admin = await requireAdmin(context);
     await admin.from("app_settings").upsert({ key: "whatsapp_number", value: data.number, updated_at: new Date().toISOString() });
     await audit(admin, context.userId, "alterar_whatsapp", data.number);
+    return { ok: true };
+  });
+
+export const adminSetSocketUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ url: z.string().trim().max(4000).refine((u) => u === "" || isValidSocketUrl(u), "Ligação inválida (tem de começar por wss://)") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const admin = await requireAdmin(context);
+    if (data.url === "") await admin.from("private_settings").delete().eq("key", "evo_socket_url");
+    else await admin.from("private_settings").upsert({ key: "evo_socket_url", value: data.url, updated_at: new Date().toISOString() });
+    await audit(admin, context.userId, "alterar_ligacao_mesa", data.url ? "configurada" : "removida");
     return { ok: true };
   });
