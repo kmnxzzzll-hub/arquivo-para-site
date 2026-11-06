@@ -203,6 +203,85 @@
   box-shadow: 0 0 0 4px color-mix(in oklab, var(--banker) 18%, transparent), 0 0 24px -6px color-mix(in oklab, var(--banker) 55%, transparent);
 }
 
+/* ===== Apple-style cards & motion ===== */
+@keyframes rise-spring {
+  0% { opacity: 0; transform: translateY(18px) scale(0.96); filter: blur(6px); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.01); filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.55); }
+  55% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes sheen { 0% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.55; } 50% { transform: scale(1.12); opacity: 0.9; } }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes aurora { 0% { transform: translate3d(-6%, -4%, 0) scale(1); } 50% { transform: translate3d(6%, 4%, 0) scale(1.15); } 100% { transform: translate3d(-6%, -4%, 0) scale(1); } }
+
+@utility animate-rise-spring { animation: rise-spring 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--d, 0ms); }
+@utility animate-pop { animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@utility animate-float { animation: float-y 4s ease-in-out infinite; }
+
+/* Cartão de vidro: gradiente translúcido, borda de luz interna, elevação ao passar o rato. */
+@utility apple-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, color-mix(in oklab, white 9%, transparent), color-mix(in oklab, white 2%, transparent)),
+    color-mix(in oklab, var(--card) 70%, transparent);
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in oklab, white 14%, transparent), 0 1px 2px oklch(0 0 0 / 0.3), 0 18px 40px -18px oklch(0 0 0 / 0.65);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease, border-color 0.5s ease;
+}
+@utility apple-card-hover {
+  &:hover { transform: translateY(-3px) scale(1.015); border-color: color-mix(in oklab, white 20%, transparent); }
+  &:active { transform: scale(0.985); transition-duration: 0.15s; }
+}
+/* Brilho a varrer o cartão destacado. */
+@utility card-sheen {
+  &::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(110deg, transparent 35%, color-mix(in oklab, white 16%, transparent) 50%, transparent 65%);
+    animation: sheen 3.2s ease-in-out infinite;
+  }
+}
+/* Halo suave colorido atrás do cartão ativo. */
+@utility card-halo-player { background-image: radial-gradient(120% 90% at 50% 0%, color-mix(in oklab, var(--player) 28%, transparent), transparent 70%); }
+@utility card-halo-banker { background-image: radial-gradient(120% 90% at 50% 0%, color-mix(in oklab, var(--banker) 28%, transparent), transparent 70%); }
+@utility card-halo-tie { background-image: radial-gradient(120% 90% at 50% 0%, color-mix(in oklab, var(--tie) 28%, transparent), transparent 70%); }
+
+/* Fundo aurora lento e discreto. */
+body::before {
+  content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40% 35% at 20% 25%, color-mix(in oklab, var(--player) 18%, transparent), transparent 70%),
+    radial-gradient(35% 30% at 80% 70%, color-mix(in oklab, var(--banker) 12%, transparent), transparent 70%);
+  animation: aurora 22s ease-in-out infinite;
+}
+
+/* Anel de análise: arco giratório + respiração. */
+@utility scan-ring {
+  position: relative; border-radius: 9999px;
+  &::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: conic-gradient(from 0deg, transparent 0 55%, var(--primary) 100%);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    animation: orbit 1s linear infinite;
+  }
+  &::after {
+    content: ""; position: absolute; inset: 10px; border-radius: inherit;
+    background: color-mix(in oklab, var(--primary) 25%, transparent);
+    animation: breathe 1.6s ease-in-out infinite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .signal-banker, .signal-player { animation: none; }
+  .animate-rise, .animate-rise-spring, .animate-pop, .animate-float, .signal-banker, .signal-player, .card-sheen::after, .scan-ring::before, .scan-ring::after, body::before { animation: none; }
+  .apple-card, .apple-card-hover { transition: none; }
 }

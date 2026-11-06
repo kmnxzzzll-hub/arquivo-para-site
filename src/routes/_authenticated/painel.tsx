@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useRef, useState } from "react";
-import { Loader2, RotateCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateSignal, type SignalDTO } from "@/lib/app.functions";
 import { useLiveRoad } from "@/hooks/use-live-road";
@@ -21,6 +21,26 @@ const ENTRY = {
   banker: { name: "BANKER", circle: "entry-banker" },
   player: { name: "PLAYER", circle: "entry-player" },
 } as const;
+const HALO = { banker: "card-halo-banker", tie: "card-halo-tie", player: "card-halo-player" } as const;
+
+/** Anima o número de 0 até ao valor com ease-out (respeita prefers-reduced-motion). */
+function CountUp({ value }: { value: number }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setN(value); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - t0) / 900);
+      setN(Math.round(value * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{n}%</>;
+}
+
 const TIMEOUT_MS = 15000;
 const WAIT_MS = 5000;
 
@@ -67,23 +87,23 @@ function Painel() {
       <LiveStrip status={live.status} stats={live.stats} />
 
       <div className="grid w-full grid-cols-3 gap-2 sm:gap-3" aria-label="Probabilities">
-        {CARDS.map((c) => (
-          <div key={c.o} className={`flex min-w-0 flex-col items-center justify-center rounded-lg border bg-secondary/40 px-1 py-5 transition-all duration-500 sm:py-6 ${lead === c.o ? c.glow : "border-border"}`}>
+        {CARDS.map((c, i) => (
+          <div key={c.o} style={{ "--d": `${i * 90}ms` } as React.CSSProperties} className={`apple-card apple-card-hover animate-rise-spring flex min-w-0 flex-col items-center justify-center rounded-3xl px-1 py-5 sm:py-6 ${lead === c.o ? `${c.glow} ${HALO[c.o]} card-sheen` : ""}`}>
             <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight sm:gap-2 sm:text-sm ${c.text}`}><span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${c.dot}`} />{c.label}</div>
-            <div className="num mt-2 text-3xl text-foreground sm:text-5xl">{res ? `${res.ints[c.o]}%` : "—"}</div>
+            <div className="num mt-2 text-3xl text-foreground sm:text-5xl">{res ? <CountUp key={res.created_at} value={res.ints[c.o]} /> : "—"}</div>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-7" aria-live="polite">
+      <div className="apple-card animate-rise-spring flex flex-col items-center justify-center gap-3 rounded-3xl px-4 py-7" style={{ "--d": "300ms" } as React.CSSProperties} aria-live="polite">
         {loading ? (
           <>
-            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-muted"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></span>
+            <span className="scan-ring h-24 w-24" aria-hidden />
             <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Analysing the table…</div>
           </>
         ) : lead ? (
-          <div key={res?.created_at} className="animate-rise flex flex-col items-center gap-3">
-            <span className={`h-24 w-24 rounded-full ${ENTRY[lead].circle}`} aria-hidden />
+          <div key={res?.created_at} className="animate-rise-spring flex flex-col items-center gap-3">
+            <span className={`animate-pop animate-float h-24 w-24 rounded-full ${ENTRY[lead].circle}`} aria-hidden />
             <div className="text-sm font-extrabold uppercase tracking-wider text-success">✅ Confirmed entry</div>
             <div className="num text-4xl text-foreground sm:text-5xl">{ENTRY[lead].name}</div>
           </div>
@@ -97,9 +117,9 @@ function Painel() {
 
       <div className="mt-auto flex w-full flex-col items-center gap-2">
         <Button variant="hero" className="h-16 w-full max-w-sm rounded-xl px-3 text-base font-extrabold tracking-tight sm:text-lg" disabled={loading} onClick={run}>
-          {loading ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm normal-case">Generating signal...</span></>
-            : res ? <><RotateCw className="h-5 w-5" />GENERATE NEW SIGNAL</>
-            : "GENERATE SIGNAL"}
+          {loading ? <><Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.5} /><span className="text-sm normal-case">Generating signal...</span></>
+            : res ? <><RefreshCw className="h-6 w-6" strokeWidth={2.5} />GENERATE NEW SIGNAL</>
+            : <><Sparkles className="h-6 w-6 animate-float" strokeWidth={2.5} />GENERATE SIGNAL</>}
         </Button>
         <p role="status" className="flex h-5 items-center text-center text-sm font-bold text-destructive">{error ?? ""}</p>
       </div>
@@ -113,7 +133,7 @@ function LiveStrip({ status, stats }: { status: ReturnType<typeof useLiveRoad>["
   if (status === "off") return null;
   const label = status === "live" ? "Live table" : status === "connecting" ? "Connecting to live table..." : "Live table unavailable · recorded rounds";
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs font-bold">
+    <div className="apple-card animate-rise-spring flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-xs font-bold">
       <span className="flex items-center gap-2 uppercase tracking-wide text-muted-foreground">
         <span aria-hidden className={`h-2 w-2 rounded-full ${status === "live" ? "live-dot" : "bg-muted-foreground/50"}`} />
         {label}
