@@ -166,19 +166,19 @@
 }
 
 /* Comando do sinal com brilho da cor correspondente. */
-@keyframes signal-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+@keyframes signal-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.06); } }
 @utility signal-banker {
-  border-color: var(--banker);
-  background: color-mix(in oklab, var(--banker) 14%, transparent);
-  box-shadow: 0 0 0 1px var(--banker), 0 0 32px -6px color-mix(in oklab, var(--banker) 75%, transparent);
-  text-shadow: 0 0 18px color-mix(in oklab, var(--banker) 60%, transparent);
+  border-color: color-mix(in oklab, var(--banker) 60%, transparent);
+  background: color-mix(in oklab, var(--banker) 7%, transparent);
+  box-shadow: 0 0 16px -10px color-mix(in oklab, var(--banker) 50%, transparent);
+  text-shadow: none;
   animation: signal-pulse 2.2s ease-in-out infinite;
 }
 @utility signal-player {
-  border-color: var(--player);
-  background: color-mix(in oklab, var(--player) 14%, transparent);
-  box-shadow: 0 0 0 1px var(--player), 0 0 32px -6px color-mix(in oklab, var(--player) 75%, transparent);
-  text-shadow: 0 0 18px color-mix(in oklab, var(--player) 60%, transparent);
+  border-color: color-mix(in oklab, var(--player) 60%, transparent);
+  background: color-mix(in oklab, var(--player) 7%, transparent);
+  box-shadow: 0 0 16px -10px color-mix(in oklab, var(--player) 50%, transparent);
+  text-shadow: none;
   animation: signal-pulse 2.2s ease-in-out infinite;
 }
 

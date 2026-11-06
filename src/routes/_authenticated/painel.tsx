@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TrendMap } from "@/components/TrendMap";
 import { generateSignal, getLastSignal, type SignalDTO } from "@/lib/app.functions";
 import type { Outcome } from "@/lib/stats";
 
@@ -14,9 +13,9 @@ export const Route = createFileRoute("/_authenticated/painel")({
 });
 
 const CARDS: { o: Outcome; label: string; text: string; dot: string; glow: string }[] = [
-  { o: "banker", label: "Vermelho", text: "text-banker", dot: "bg-banker", glow: "border-banker/70 shadow-[0_0_18px_-8px_var(--banker)]" },
-  { o: "tie", label: "Empate", text: "text-tie", dot: "bg-tie", glow: "border-tie/70 shadow-[0_0_18px_-8px_var(--tie)]" },
-  { o: "player", label: "Azul", text: "text-player", dot: "bg-player", glow: "border-player/70 shadow-[0_0_18px_-8px_var(--player)]" },
+  { o: "banker", label: "Vermelho", text: "text-banker", dot: "bg-banker", glow: "border-banker/40 shadow-[0_0_10px_-8px_var(--banker)]" },
+  { o: "tie", label: "Empate", text: "text-tie", dot: "bg-tie", glow: "border-tie/40 shadow-[0_0_10px_-8px_var(--tie)]" },
+  { o: "player", label: "Azul", text: "text-player", dot: "bg-player", glow: "border-player/40 shadow-[0_0_10px_-8px_var(--player)]" },
 ];
 const COMMAND = {
   banker: { text: "ENTRAR NO VERMELHO 🔴", cls: "signal-banker text-banker" },
@@ -53,7 +52,6 @@ function Painel() {
       if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
       setFresh(r);
       qc.setQueryData(["last-signal"], r);
-      qc.invalidateQueries({ queryKey: ["recent-winners"] });
     } catch {
       setError("Tenta novamente.");
     } finally {
@@ -76,24 +74,21 @@ function Painel() {
         ))}
       </div>
 
-      <div className="flex min-h-16 w-full items-center justify-center" aria-live="polite">
-        {lead && (
-          <div key={res?.created_at} className={`animate-rise w-full rounded-2xl border-2 px-4 py-4 text-center font-display text-xl font-extrabold tracking-tight sm:text-2xl ${COMMAND[lead].cls}`}>
-            {COMMAND[lead].text}
-          </div>
-        )}
-      </div>
-
-      <div className="flex w-full flex-col items-center gap-2">
+      <div className="mt-auto flex w-full flex-col items-center gap-4">
+        <div className="flex min-h-16 w-full max-w-sm items-center justify-center" aria-live="polite">
+          {lead && (
+            <div key={res?.created_at} className={`animate-rise w-full rounded-2xl border-2 px-4 py-4 text-center font-display text-xl font-extrabold tracking-tight sm:text-2xl ${COMMAND[lead].cls}`}>
+              {COMMAND[lead].text}
+            </div>
+          )}
+        </div>
         <Button variant="hero" className="h-16 w-full max-w-sm rounded-2xl px-3 text-base font-extrabold tracking-tight sm:text-lg" disabled={loading} onClick={run}>
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm normal-case">A gerar sinal...</span></> : "GERAR SINAL"}
         </Button>
         <p role="status" className="flex h-5 items-center text-center text-sm font-bold text-destructive">{error ?? ""}</p>
       </div>
 
-      <TrendMap />
-
-      <footer className="mt-auto pt-4 text-center text-sm font-extrabold tracking-tight">Acertividade 98%</footer>
+      <footer className="pt-2 text-center text-sm font-extrabold tracking-tight">Acertividade 98%</footer>
     </section>
   );
 }
