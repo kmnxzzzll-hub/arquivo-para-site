@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { DEFAULT_TOTAL_GAINS } from "./config";
 import { analyse, simulate, winnerFromSums, percentageInts, pickWinner, MIN_OBSERVATIONS, type Outcome } from "./stats";
 
 type Ctx = { supabase: any; userId: string };
@@ -131,22 +132,32 @@ export const changePassword = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-/** Cada clique: grava rodadas novas (dados equilibrados) e calcula a confirmação pelas estratégias sobre as últimas 300. */
+/**
+ * Cada clique calcula a confirmação pelas estratégias. Com a mesa ao vivo ligada, usa o histórico real
+ * recebido no evento bacbo.road (mais antigo → mais recente); sem ela, grava rodadas novas e usa as últimas 300.
+ */
 export const generateSignal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: unknown) =>
+    z.object({ live: z.array(z.enum(["player", "tie", "banker"])).max(300).optional() }).optional().parse(d))
+  .handler(async ({ data: input, context }) => {
     await assertActive(context);
     const { strategyConfidence } = await import("./stats");
-    const fresh = Array.from({ length: 12 }, () => {
-      const p = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
-      const b = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
-      return { user_id: context.userId, winner: winnerFromSums(p, b), player_sum: p, banker_sum: b, source: "import" };
-    });
-    const { error: e1 } = await context.supabase.from("rounds").insert(fresh);
-    if (e1) throw new Error("Não foi possível guardar as rodadas.");
-    const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(300);
-    if (error) throw new Error("Não foi possível ler as rodadas.");
-    const history = (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
+    let history: Outcome[];
+    if (input?.live && input.live.length >= MIN_OBSERVATIONS) {
+      history = input.live;
+    } else {
+      const fresh = Array.from({ length: 12 }, () => {
+        const p = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
+        const b = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
+        return { user_id: context.userId, winner: winnerFromSums(p, b), player_sum: p, banker_sum: b, source: "import" };
+      });
+      const { error: e1 } = await context.supabase.from("rounds").insert(fresh);
+      if (e1) throw new Error("Não foi possível guardar as rodadas.");
+      const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(300);
+      if (error) throw new Error("Não foi possível ler as rodadas.");
+      history = (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
+    }
     const confidence = strategyConfidence(history);
     const ints = percentageInts(confidence);
     if (ints.banker + ints.tie + ints.player !== 100) throw new Error("Validação falhou.");
@@ -189,6 +200,9 @@ export const getLiveConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertActive(context);
-    const { data } = await context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
-    return { socketUrl: (data?.value as string | undefined) ?? "" };
+    const [{ data }, { data: gains }] = await Promise.all([
+      context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle(),
+      context.supabase.from("app_settings").select("value").eq("key", "total_gains").maybeSingle(),
+    ]);
+    return { socketUrl: (data?.value as string | undefined) ?? "", totalGains: (gains?.value as string | undefined) ?? DEFAULT_TOTAL_GAINS };
   });

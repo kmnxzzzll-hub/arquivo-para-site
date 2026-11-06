@@ -8,3 +8,4 @@
 - [x] Admin: centered logo, tabs, neutral text instead of yellow
 - [x] "AO VIVO" red dot with continuous pulsing glow
 - [x] Admin: account form (username + password) + keep import
+- [x] Painel: Ganhos totais card (admin-editable), JOGADOR/BANQUEIRO entry card, GERAR NOVO SINAL, sober corners, tabular numbers, live table stats
