@@ -21,7 +21,7 @@ const ENTRY = {
   banker: { name: "BANKER", circle: "entry-banker" },
   player: { name: "PLAYER", circle: "entry-player" },
 } as const;
-const TIMEOUT_MS = 10000;
+const TIMEOUT_MS = 15000;
 const WAIT_MS = 5000;
 
 function withTimeout<T>(p: Promise<T>): Promise<T> {
