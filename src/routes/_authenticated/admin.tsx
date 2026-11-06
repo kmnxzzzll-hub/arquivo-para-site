@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { PageTitle } from "@/components/AppShell";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp, adminSetSocketUrl } from "@/lib/admin.functions";
+import { adminOverview, adminSetActive, adminResetPassword, adminCreateAccounts, adminSetWhatsapp, adminSetSocketUrl, adminSetTotalGains } from "@/lib/admin.functions";
+import { formatKz } from "@/lib/config";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Administração — Bac Bo Live" }, { name: "description", content: "Gestão privada de contas Bac Bo Live." }, { property: "og:title", content: "Administração — Bac Bo Live" }, { property: "og:description", content: "Gestão privada de contas Bac Bo Live." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }, { name: "robots", content: "noindex" }] }),
@@ -35,7 +36,9 @@ function Admin() {
   const [newUser, setNewUser] = useState("");
   const [newPass, setNewPass] = useState("");
   const [report, setReport] = useState<Awaited<ReturnType<typeof createFn>>["report"] | null>(null);
-  useEffect(() => { if (q.data) { setWa(q.data.whatsapp); setSock(q.data.socketUrl); } }, [q.data]);
+  const gainsFn = useServerFn(adminSetTotalGains);
+  const [gains, setGains] = useState("");
+  useEffect(() => { if (q.data) { setWa(q.data.whatsapp); setSock(q.data.socketUrl); setGains(q.data.totalGains); } }, [q.data]);
   const refresh = () => qc.invalidateQueries({ queryKey: ["admin"] });
 
   const toggle = useMutation({ mutationFn: (v: { id: string; active: boolean }) => activeFn({ data: v }), onSuccess: refresh, onError: (e: Error) => toast.error(e.message) });
@@ -152,13 +155,22 @@ function Admin() {
           </section>
 
           <section className="panel p-4">
+            <h2 className="mb-2 text-sm font-bold tracking-tight">Ganhos totais (Kz)</h2>
+            <div className="flex gap-2">
+              <Input value={gains} onChange={(e) => setGains(e.target.value.replace(/\D/g, "").slice(0, 15))} className="bg-secondary tabular-nums" inputMode="numeric" aria-label="Ganhos totais" />
+              <Button onClick={() => gainsFn({ data: { value: gains } }).then(() => { toast.success("Valor guardado."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Valor inválido."))}>Guardar</Button>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Aparece no topo do painel como {formatKz(gains || "0")}.</p>
+          </section>
+
+          <section className="panel p-4">
             <h2 className="mb-2 text-sm font-bold tracking-tight">Ligação da mesa ao vivo</h2>
             <textarea value={sock} onChange={(e) => setSock(e.target.value)} rows={3} placeholder="wss://…/public/bacbo/player/game/…/socket?messageFormat=json&…" className="w-full break-all rounded-md border border-input bg-secondary p-2 font-mono text-xs" aria-label="Ligação da mesa ao vivo" />
             <div className="mt-2 flex gap-2">
               <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then(() => { toast.success(sock.trim() ? "Ligação guardada." : "Ligação removida."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Ligação inválida. Tem de começar por wss://"))}>Guardar</Button>
               {d.socketUrl && <Button variant="secondary" onClick={() => setSock("")}>Limpar</Button>}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">Cola o endereço completo da ligação da mesa (inclui a sessão). Quando a sessão expira ou a mesa recusa a ligação, o mapa de tendências usa as rodadas gravadas.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Cola o endereço completo da ligação da mesa (inclui a sessão). Quando a sessão expira ou a mesa recusa a ligação, o painel volta a usar as rodadas gravadas.</p>
           </section>
         </TabsContent>
 

@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { usernameToEmail } from "./config";
+import { usernameToEmail, DEFAULT_TOTAL_GAINS } from "./config";
 import { isValidSocketUrl } from "./road";
 
 async function requireAdmin(ctx: { supabase: any; userId: string }) {
@@ -20,7 +20,7 @@ export const adminOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await requireAdmin(context);
-    const [{ data: profiles }, { data: roles }, list, { data: logs }, { count: rounds }, { count: analyses }, { data: setting }, { data: attempts }, { data: socket }] =
+    const [{ data: profiles }, { data: roles }, list, { data: logs }, { count: rounds }, { count: analyses }, { data: setting }, { data: attempts }, { data: socket }, { data: gains }] =
       await Promise.all([
         admin.from("profiles").select("id, username, active, created_at, last_seen_at").order("username"),
         admin.from("user_roles").select("user_id, role"),
@@ -31,6 +31,7 @@ export const adminOverview = createServerFn({ method: "GET" })
         admin.from("app_settings").select("value").eq("key", "whatsapp_number").maybeSingle(),
         admin.from("login_attempts").select("username, success, created_at").order("created_at", { ascending: false }).limit(30),
         admin.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle(),
+        admin.from("app_settings").select("value").eq("key", "total_gains").maybeSingle(),
       ]);
     const lastSign = new Map((list.data?.users ?? []).map((u: any) => [u.id, u.last_sign_in_at as string | null]));
     return {
@@ -44,6 +45,7 @@ export const adminOverview = createServerFn({ method: "GET" })
       counts: { rounds: rounds ?? 0, analyses: analyses ?? 0 },
       whatsapp: setting?.value ?? "",
       socketUrl: socket?.value ?? "",
+      totalGains: gains?.value ?? DEFAULT_TOTAL_GAINS,
       authOk: !list.error,
     };
   });
@@ -109,6 +111,16 @@ export const adminSetWhatsapp = createServerFn({ method: "POST" })
     const admin = await requireAdmin(context);
     await admin.from("app_settings").upsert({ key: "whatsapp_number", value: data.number, updated_at: new Date().toISOString() });
     await audit(admin, context.userId, "alterar_whatsapp", data.number);
+    return { ok: true };
+  });
+
+export const adminSetTotalGains = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ value: z.string().regex(/^\d{1,15}$/, "Valor inválido") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const admin = await requireAdmin(context);
+    await admin.from("app_settings").upsert({ key: "total_gains", value: data.value, updated_at: new Date().toISOString() });
+    await audit(admin, context.userId, "alterar_ganhos_totais", data.value);
     return { ok: true };
   });
 
