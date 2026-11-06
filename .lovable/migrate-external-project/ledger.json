@@ -1,0 +1,13 @@
+[
+  {"capability": "code", "source": "live-bac-bo-main.zip (Lovable TanStack project)", "outcome": "migrate", "status": "verified", "next_action": "none"},
+  {"capability": "schema", "source": "drizzle/migrations 0000 + 0001", "outcome": "migrate", "status": "verified", "next_action": "none"},
+  {"capability": "records", "source": "old database (rounds, analyses, audit logs)", "outcome": "migrate", "status": "pending", "next_action": "No export attached; WhatsApp setting seeded. Rounds are generated per click, so history is optional"},
+  {"capability": "auth_identities", "source": "username-only accounts (~21), synthetic emails", "outcome": "migrate", "status": "pending", "next_action": "Admin bac_admin_X7K9Q2 recreated; owner recreates user accounts via admin bulk import (old passwords cannot be copied)"},
+  {"capability": "authorization", "source": "user_roles + has_role + RLS", "outcome": "migrate", "status": "verified", "next_action": "none"},
+  {"capability": "uploaded_files", "source": "logo assets", "outcome": "migrate", "status": "verified", "next_action": "none"},
+  {"capability": "external_providers", "source": "WhatsApp wa.me link", "outcome": "preserve", "status": "verified", "next_action": "none"},
+  {"capability": "public_endpoints_webhooks_schedules", "source": "none found", "outcome": "n/a", "status": "verified", "next_action": "none"},
+  {"capability": "secrets", "source": "only Cloud-managed keys", "outcome": "n/a", "status": "verified", "next_action": "none"},
+  {"capability": "cutover", "source": "old project URL", "outcome": "user", "status": "pending", "next_action": "Publish new site when ready"},
+  {"capability": "verification", "source": "-", "outcome": "verify", "status": "verified", "next_action": "27 tests pass; admin login, admin page and signal generation checked in browser"}
+]
