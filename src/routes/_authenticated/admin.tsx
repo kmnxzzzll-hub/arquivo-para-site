@@ -147,7 +147,7 @@ function Admin() {
             <h2 className="mb-2 text-sm font-bold tracking-tight">WhatsApp number</h2>
             <div className="flex gap-2">
               <Input value={wa} onChange={(e) => setWa(e.target.value.replace(/\D/g, ""))} className="bg-secondary" inputMode="numeric" aria-label="WhatsApp number" />
-              <Button onClick={() => waFn({ data: { number: wa } }).then(() => { toast.success("Number saved."); refresh(); }).catch(() => toast.error("Invalid number."))}>Guardar</Button>
+              <Button onClick={() => waFn({ data: { number: wa } }).then(() => { toast.success("Number saved."); refresh(); }).catch(() => toast.error("Invalid number."))}>Save</Button>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">International format without "+", e.g. 244956125296.</p>
           </section>
@@ -156,7 +156,7 @@ function Admin() {
             <h2 className="mb-2 text-sm font-bold tracking-tight">Live table connection</h2>
             <textarea value={sock} onChange={(e) => setSock(e.target.value)} rows={3} placeholder="wss://…/public/bacbo/player/game/…/socket?messageFormat=json&…" className="w-full break-all rounded-md border border-input bg-secondary p-2 font-mono text-xs" aria-label="Live table connection" />
             <div className="mt-2 flex gap-2">
-              <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then(() => { toast.success(sock.trim() ? "Connection saved." : "Connection removed."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Invalid connection. It must start with wss://"))}>Guardar</Button>
+              <Button onClick={() => sockFn({ data: { url: sock.trim() } }).then(() => { toast.success(sock.trim() ? "Connection saved." : "Connection removed."); refresh(); qc.invalidateQueries({ queryKey: ["live-config"] }); }).catch(() => toast.error("Invalid connection. It must start with wss://"))}>Save</Button>
               {d.socketUrl && <Button variant="secondary" onClick={() => setSock("")}>Clear</Button>}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">Paste the full live table connection address (including the session). When the session expires or the table refuses the connection, the panel falls back to recorded rounds.</p>

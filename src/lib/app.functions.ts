@@ -80,10 +80,10 @@ export const generateAnalysis = createServerFn({ method: "POST" })
       winners = (rows ?? []).map((r: { winner: string }) => r.winner as Outcome);
       if (winners.length < MIN_OBSERVATIONS)
         return { ok: false as const, error: `Not enough data: at least ${MIN_OBSERVATIONS} recorded rounds are needed (you have ${winners.length}).` };
-      method = "Frequência observada + estimativa bayesiana (Dirichlet, prior teórico de 30 rodadas) + qui-quadrado";
+      method = "Observed frequency + Bayesian estimate (Dirichlet, theoretical prior of 30 rounds) + chi-square";
     } else {
       winners = simulate(data.simulations ?? 10000);
-      method = `Simulação Monte Carlo de ${winners.length} rodadas com dados equilibrados`;
+      method = `Monte Carlo simulation of ${winners.length} rounds with fair dice`;
     }
     const a = analyse(winners);
     const sum = a.estimate.player + a.estimate.tie + a.estimate.banker;
