@@ -1,0 +1,13 @@
+[
+  {"capability": "code", "source": "live-bac-bo-main.zip (Lovable TanStack project)", "outcome": "migrate", "status": "in_progress", "next_action": "Copy routes, components, lib and styles"},
+  {"capability": "schema", "source": "drizzle/migrations 0000 + 0001", "outcome": "migrate", "status": "pending", "next_action": "Apply as Lovable Cloud migration"},
+  {"capability": "records", "source": "old Lovable Cloud database (rounds, analyses, settings, audit logs)", "outcome": "migrate", "status": "pending", "next_action": "No export attached; whatsapp setting seeded by migration; ask for exports after preview"},
+  {"capability": "auth_identities", "source": "username-only accounts (synthetic emails @bacbolive.local), ~21 accounts", "outcome": "migrate", "status": "pending", "next_action": "No user export; recreate admin account, admin recreates user accounts via bulk import"},
+  {"capability": "authorization", "source": "user_roles + has_role + RLS", "outcome": "migrate", "status": "pending", "next_action": "Included in migration"},
+  {"capability": "uploaded_files", "source": "none (logo via CDN asset pointers)", "outcome": "n/a", "status": "verified", "next_action": "none"},
+  {"capability": "external_providers", "source": "WhatsApp wa.me link only", "outcome": "preserve", "status": "pending", "next_action": "Copied with code"},
+  {"capability": "public_endpoints_webhooks_schedules", "source": "none found", "outcome": "n/a", "status": "verified", "next_action": "none"},
+  {"capability": "secrets", "source": "only Cloud-managed keys", "outcome": "n/a", "status": "verified", "next_action": "none"},
+  {"capability": "cutover", "source": "old project URL", "outcome": "user", "status": "pending", "next_action": "Publish new site when ready"},
+  {"capability": "verification", "source": "-", "outcome": "verify", "status": "pending", "next_action": "Tests, admin login, signal generation"}
+]
