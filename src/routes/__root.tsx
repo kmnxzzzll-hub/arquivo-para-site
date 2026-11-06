@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bac Bo Live — Análise estatística" },
+      { title: "Bac Bo Live — Live signals" },
       { name: "description", content: "Private platform with live Bac Bo signals." },
       { property: "og:title", content: "Bac Bo Live" },
       { property: "og:description", content: "Private platform with live Bac Bo signals." },
