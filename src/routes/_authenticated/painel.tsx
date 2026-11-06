@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateSignal, getLiveConfig, type SignalDTO } from "@/lib/app.functions";
+import { generateSignal, type SignalDTO } from "@/lib/app.functions";
 import { useLiveRoad } from "@/hooks/use-live-road";
 import type { Outcome } from "@/lib/stats";
 
@@ -31,9 +30,7 @@ function withTimeout<T>(p: Promise<T>): Promise<T> {
 
 function Painel() {
   const gen = useServerFn(generateSignal);
-  const cfgFn = useServerFn(getLiveConfig);
-  const cfg = useQuery({ queryKey: ["live-config"], queryFn: () => cfgFn(), staleTime: 60_000 });
-  const live = useLiveRoad(cfg.data?.socketUrl);
+  const live = useLiveRoad();
   const [fresh, setFresh] = useState<SignalDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +45,7 @@ function Painel() {
     setError(null);
     const started = Date.now();
     try {
-      const history = live.status === "live" && live.road ? live.road.history.slice(-300) : undefined;
-      const r = await withTimeout(gen({ data: history ? { live: history } : {} }));
+      const r = await withTimeout(gen());
       if (r.ints.banker + r.ints.tie + r.ints.player !== 100) throw new Error("invalid");
       const wait = WAIT_MS - (Date.now() - started);
       if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
@@ -68,7 +64,7 @@ function Painel() {
     <section className="mx-auto flex min-h-[calc(100svh-9rem)] w-full max-w-xl flex-col gap-4">
       <h1 className="sr-only">Bac Bo Live</h1>
 
-      <LiveStrip status={live.status} stats={live.road?.stats} />
+      <LiveStrip status={live.status} stats={live.stats} />
 
       <div className="grid w-full grid-cols-3 gap-2 sm:gap-3" aria-label="Probabilities">
         {CARDS.map((c) => (
