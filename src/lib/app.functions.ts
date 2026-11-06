@@ -131,21 +131,33 @@ export const changePassword = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/** Reads the admin-configured live table address (active members only); "" when none. */
+async function liveUrl(ctx: Ctx): Promise<string> {
+  const { data } = await ctx.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
+  return (data?.value as string | undefined) ?? "";
+}
+
 /**
- * Cada clique calcula a confirmação pelas estratégias. Com a mesa ao vivo ligada, usa o histórico real
- * recebido no evento bacbo.road (mais antigo → mais recente); sem ela, grava rodadas novas e usa as últimas 300.
+ * Each click computes the strategy confirmation. When the live table answers (read on the server from the
+ * admin-configured socket, "bacbo.road" event, oldest → newest), its real history is used; otherwise new
+ * rounds are recorded and the latest 300 are used.
  */
 export const generateSignal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ live: z.array(z.enum(["player", "tie", "banker"])).max(300).optional() }).optional().parse(d))
-  .handler(async ({ data: input, context }) => {
+  .handler(async ({ context }) => {
     await assertActive(context);
     const { strategyConfidence } = await import("./stats");
-    let history: Outcome[];
-    if (input?.live && input.live.length >= MIN_OBSERVATIONS) {
-      history = input.live;
-    } else {
+    let history: Outcome[] = [];
+    const url = await liveUrl(context);
+    if (url) {
+      const { diagnoseSocketUrl } = await import("./road");
+      if (diagnoseSocketUrl(url).length === 0) {
+        const { cachedLiveRoad } = await import("./live-probe.server");
+        const r = await cachedLiveRoad(url);
+        if (r.status === "live") history = r.road.history.slice(-300);
+      }
+    }
+    if (history.length < MIN_OBSERVATIONS) {
       const fresh = Array.from({ length: 12 }, () => {
         const p = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
         const b = 2 + Math.floor(Math.random() * 6) + Math.floor(Math.random() * 6);
@@ -173,32 +185,21 @@ function toSignal(r: { banker: number; tie: number; player: number; winner: stri
   return { ints: { banker: r.banker, tie: r.tie, player: r.player }, winner: r.winner === "player" ? "player" : "banker", created_at: r.created_at };
 }
 
-/** Último sinal guardado do utilizador (para mostrar ao recarregar a página). */
-export const getLastSignal = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertActive(context);
-    const { data } = await context.supabase
-      .from("signals").select("banker, tie, player, winner, created_at")
-      .order("created_at", { ascending: false }).limit(1).maybeSingle();
-    return data ? toSignal(data) : null;
-  });
+export type LiveRoadDTO =
+  | { status: "off" }
+  | { status: "live"; stats: { banker: number; player: number; tie: number }; rounds: number }
+  | { status: "unavailable" };
 
-/** Últimas rodadas gravadas (mais antiga → mais recente), usadas quando a ligação ao vivo não está disponível. */
-export const recentWinners = createServerFn({ method: "GET" })
+/** Live table state read on the server (the address and session never reach the browser). */
+export const getLiveRoad = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<LiveRoadDTO> => {
     await assertActive(context);
-    const { data, error } = await context.supabase.from("rounds").select("winner").order("created_at", { ascending: false }).limit(40);
-    if (error) throw new Error("Could not load the rounds.");
-    return (data ?? []).map((r: { winner: string }) => r.winner as Outcome).reverse();
-  });
-
-/** Ligação da mesa ao vivo configurada pelo administrador (só utilizadores ativos). */
-export const getLiveConfig = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertActive(context);
-    const { data } = await context.supabase.from("private_settings").select("value").eq("key", "evo_socket_url").maybeSingle();
-    return { socketUrl: (data?.value as string | undefined) ?? "" };
+    const url = await liveUrl(context);
+    if (!url) return { status: "off" };
+    const { diagnoseSocketUrl } = await import("./road");
+    if (diagnoseSocketUrl(url).length) return { status: "unavailable" };
+    const { cachedLiveRoad } = await import("./live-probe.server");
+    const r = await cachedLiveRoad(url);
+    return r.status === "live" ? { status: "live", stats: r.road.stats, rounds: r.road.history.length } : { status: "unavailable" };
   });
