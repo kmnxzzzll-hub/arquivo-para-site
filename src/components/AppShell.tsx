@@ -25,8 +25,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
   return (
     <div className="min-h-screen pb-10">
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-background/60 backdrop-blur-xl">
-        <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3.5">
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-background/55 backdrop-blur-xl">
+        <div className="mx-auto grid max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3">
           <span className="flex items-center gap-2 justify-self-start text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
             <span aria-hidden className="live-dot h-2 w-2" />
             LIVE
@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 to="/admin"
                 className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide text-foreground/80 transition hover:bg-white/5"
-                aria-label="Administration"
+                aria-label="Administração"
               >
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">Admin</span>
@@ -49,8 +49,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               variant="ghost"
               size="icon"
               onClick={signOut}
-              title="Sign out"
-              aria-label="Sign out"
+              title="Sair"
+              aria-label="Sair"
               className="shrink-0 text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
