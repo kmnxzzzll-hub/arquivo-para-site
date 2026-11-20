@@ -1,5 +1,11 @@
-import logo from "@/assets/bacbo-logo-transparent.png.asset.json";
-
+/** Temporary text brand — image logo removed while a new one is prepared. */
 export function Logo({ className = "" }: { className?: string }) {
-  return <img src={logo.url} alt="Bac Bo Live" className={`h-auto object-contain ${className}`} width={677} height={325} />;
+  return (
+    <span
+      className={`select-none font-display text-lg font-extrabold tracking-[0.12em] text-foreground ${className}`}
+      aria-label="Bac Bo Live"
+    >
+      BAC BO
+    </span>
+  );
 }

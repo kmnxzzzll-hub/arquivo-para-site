@@ -1,28 +1,54 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
-import { Loader2, RotateCw } from "lucide-react";
+import { Loader2, RotateCw, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateSignal, type SignalDTO } from "@/lib/app.functions";
-import { useLiveRoad } from "@/hooks/use-live-road";
 import type { Outcome } from "@/lib/stats";
 
 export const Route = createFileRoute("/_authenticated/painel")({
-  head: () => ({ meta: [{ title: "Signals — Bac Bo Live" }, { name: "description", content: "Live Bac Bo signals for members." }, { property: "og:title", content: "Signals — Bac Bo Live" }, { property: "og:description", content: "Live Bac Bo signals for members." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
+  head: () => ({
+    meta: [
+      { title: "Signals — Bac Bo Live" },
+      { name: "description", content: "Live Bac Bo signals." },
+      { property: "og:title", content: "Signals — Bac Bo Live" },
+      { property: "og:type", content: "website" },
+    ],
+  }),
   component: Painel,
 });
 
-const CARDS: { o: Outcome; label: string; text: string; dot: string; glow: string }[] = [
-  { o: "banker", label: "Banker", text: "text-banker", dot: "bg-banker", glow: "border-banker/40 shadow-[0_0_10px_-8px_var(--banker)]" },
-  { o: "tie", label: "Tie", text: "text-tie", dot: "bg-tie", glow: "border-tie/40 shadow-[0_0_10px_-8px_var(--tie)]" },
-  { o: "player", label: "Player", text: "text-player", dot: "bg-player", glow: "border-player/40 shadow-[0_0_10px_-8px_var(--player)]" },
+const CARDS: { o: Outcome; label: string; text: string; ring: string; glow: string }[] = [
+  {
+    o: "player",
+    label: "JOGADOR",
+    text: "text-player",
+    ring: "ring-player/40",
+    glow: "shadow-[0_0_28px_-8px_var(--player)] border-player/50",
+  },
+  {
+    o: "tie",
+    label: "EMPATE",
+    text: "text-tie",
+    ring: "ring-tie/40",
+    glow: "shadow-[0_0_28px_-8px_var(--tie)] border-tie/50",
+  },
+  {
+    o: "banker",
+    label: "CASA",
+    text: "text-banker",
+    ring: "ring-banker/40",
+    glow: "shadow-[0_0_28px_-8px_var(--banker)] border-banker/50",
+  },
 ];
+
 const ENTRY = {
-  banker: { name: "BANKER", circle: "entry-banker" },
-  player: { name: "PLAYER", circle: "entry-player" },
+  banker: { name: "CASA", circle: "entry-banker" },
+  player: { name: "JOGADOR", circle: "entry-player" },
 } as const;
+
 const TIMEOUT_MS = 15000;
-const WAIT_MS = 5000;
+const WAIT_MS = 4200;
 
 function withTimeout<T>(p: Promise<T>): Promise<T> {
   return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), TIMEOUT_MS))]);
@@ -30,12 +56,10 @@ function withTimeout<T>(p: Promise<T>): Promise<T> {
 
 function Painel() {
   const gen = useServerFn(generateSignal);
-  const live = useLiveRoad();
   const [fresh, setFresh] = useState<SignalDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
-  // The panel always starts clean: a signal only appears after the user clicks the button.
   const res = fresh;
 
   async function run() {
@@ -51,7 +75,7 @@ function Painel() {
       if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
       setFresh(r);
     } catch {
-      setError("Try again.");
+      setError("Tente novamente.");
     } finally {
       busy.current = false;
       setLoading(false);
@@ -61,68 +85,108 @@ function Painel() {
   const lead = res && !loading ? res.winner : null;
 
   return (
-    <section className="mx-auto flex min-h-[calc(100svh-9rem)] w-full max-w-xl flex-col gap-4">
+    <section className="mx-auto flex min-h-[calc(100svh-8.5rem)] w-full max-w-md flex-col gap-5">
       <h1 className="sr-only">Bac Bo Live</h1>
 
-      <LiveStrip status={live.status} stats={live.stats} />
-
-      <div className="grid w-full grid-cols-3 gap-2 sm:gap-3" aria-label="Probabilities">
-        {CARDS.map((c) => (
-          <div key={c.o} className={`flex min-w-0 flex-col items-center justify-center rounded-lg border bg-secondary/40 px-1 py-5 transition-all duration-500 sm:py-6 ${lead === c.o ? c.glow : "border-border"}`}>
-            <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-tight sm:gap-2 sm:text-sm ${c.text}`}><span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${c.dot}`} />{c.label}</div>
-            <div className="num mt-2 text-3xl text-foreground sm:text-5xl">{res ? `${res.ints[c.o]}%` : "—"}</div>
-          </div>
-        ))}
+      {/* Probability cards — reference style */}
+      <div className="grid w-full grid-cols-3 gap-2.5" aria-label="Probabilidades">
+        {CARDS.map((c) => {
+          const active = lead === c.o;
+          return (
+            <div
+              key={c.o}
+              className={`glass-card flex min-w-0 flex-col items-center justify-center px-2 py-5 transition-all duration-500 ${
+                active ? c.glow : "border-white/8"
+              }`}
+            >
+              <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] ${c.text}`}>
+                <span
+                  aria-hidden
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                    c.o === "banker" ? "bg-banker" : c.o === "player" ? "bg-player" : "bg-tie"
+                  }`}
+                />
+                {c.label}
+              </div>
+              <div className="num mt-2.5 text-3xl text-foreground sm:text-4xl">
+                {res ? `${res.ints[c.o]}%` : "—"}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-7" aria-live="polite">
+      {/* Entry / signal card — big circle like references */}
+      <div
+        className="glass-card relative flex flex-col items-center justify-center gap-4 overflow-hidden px-5 py-10"
+        aria-live="polite"
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,oklch(0.45_0.12_265/0.18),transparent_55%)]" />
+
         {loading ? (
-          <>
-            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-muted"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></span>
-            <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Analysing the table…</div>
-          </>
+          <div className="relative z-10 flex flex-col items-center gap-4 animate-rise">
+            <span className="flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
+              <Loader2 className="h-9 w-9 animate-spin text-muted-foreground" />
+            </span>
+            <div className="text-sm font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Analisando mesa…
+            </div>
+          </div>
         ) : lead ? (
-          <div key={res?.created_at} className="animate-rise flex flex-col items-center gap-3">
-            <span className={`h-24 w-24 rounded-full ${ENTRY[lead].circle}`} aria-hidden />
-            <div className="text-sm font-extrabold uppercase tracking-wider text-success">✅ Confirmed entry</div>
-            <div className="num text-4xl text-foreground sm:text-5xl">{ENTRY[lead].name}</div>
+          <div key={res?.created_at} className="relative z-10 flex flex-col items-center gap-3 animate-rise">
+            <span className={`h-28 w-28 rounded-full ${ENTRY[lead].circle}`} aria-hidden />
+            <div className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-[0.14em] text-success">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/20 text-[11px]">✓</span>
+              Entrada confirmada
+            </div>
+            <div className="num text-4xl tracking-wide text-foreground sm:text-5xl">{ENTRY[lead].name}</div>
           </div>
         ) : (
-          <>
-            <span className="h-24 w-24 rounded-full border-2 border-dashed border-border" aria-hidden />
-            <div className="text-sm font-bold uppercase tracking-wider text-muted-foreground">No active signal</div>
-          </>
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <span className="flex h-28 w-28 items-center justify-center rounded-full border border-dashed border-white/15 bg-white/[0.03]">
+              <Zap className="h-8 w-8 text-muted-foreground/60" />
+            </span>
+            <div className="text-center">
+              <div className="text-sm font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                Nenhum sinal gerado
+              </div>
+              <p className="mt-1.5 max-w-[240px] text-xs text-muted-foreground/70">
+                Toque em Gerar Sinal para analisar e receber a recomendação.
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="mt-auto flex w-full flex-col items-center gap-2">
-        <Button variant="hero" className="h-16 w-full max-w-sm rounded-xl px-3 text-base font-extrabold tracking-tight sm:text-lg" disabled={loading} onClick={run}>
-          {loading ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm normal-case">Generating signal...</span></>
-            : res ? <><RotateCw className="h-5 w-5" />GENERATE NEW SIGNAL</>
-            : "GENERATE SIGNAL"}
+      {/* CTA */}
+      <div className="mt-auto flex w-full flex-col items-center gap-2.5 pt-1">
+        <Button
+          variant="hero"
+          className="h-[3.6rem] w-full rounded-2xl px-4 text-base font-extrabold tracking-wide shadow-[0_0_32px_-10px_oklch(0.62_0.2_258/0.55)]"
+          disabled={loading}
+          onClick={run}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm normal-case tracking-normal">Gerando sinal…</span>
+            </>
+          ) : res ? (
+            <>
+              <RotateCw className="h-4.5 w-4.5" />
+              GERAR NOVO SINAL
+            </>
+          ) : (
+            <>
+              <Zap className="h-4.5 w-4.5" />
+              GERAR SINAL
+            </>
+          )}
         </Button>
-        <p role="status" className="flex h-5 items-center text-center text-sm font-bold text-destructive">{error ?? ""}</p>
+        <p role="status" className="flex h-5 items-center text-center text-sm font-semibold text-destructive">
+          {error ?? ""}
+        </p>
       </div>
-
-      <footer className="text-center text-sm font-extrabold tracking-tight">Accuracy 98%</footer>
     </section>
-  );
-}
-
-function LiveStrip({ status, stats }: { status: ReturnType<typeof useLiveRoad>["status"]; stats: { banker: number; player: number; tie: number } | undefined }) {
-  if (status === "off") return null;
-  const label = status === "live" ? "Live table" : status === "connecting" ? "Connecting to live table..." : "Live table unavailable · recorded rounds";
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/30 px-3 py-2 text-xs font-bold">
-      <span className="flex items-center gap-2 uppercase tracking-wide text-muted-foreground">
-        <span aria-hidden className={`h-2 w-2 rounded-full ${status === "live" ? "live-dot" : "bg-muted-foreground/50"}`} />
-        {label}
-      </span>
-      {status === "live" && stats && (
-        <span className="num flex gap-3 text-sm text-foreground">
-          <span>🔴 {stats.banker}</span><span>🔵 {stats.player}</span><span>🟡 {stats.tie}</span>
-        </span>
-      )}
-    </div>
   );
 }

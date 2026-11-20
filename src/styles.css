@@ -4,20 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -69,44 +55,46 @@
 }
 
 :root {
-  --radius: 1rem;
-  --background: oklch(0.17 0.035 265);
-  --foreground: oklch(0.96 0.01 250);
-  --card: oklch(0.21 0.04 265);
-  --card-foreground: oklch(0.96 0.01 250);
-  --popover: oklch(0.21 0.04 265);
-  --popover-foreground: oklch(0.96 0.01 250);
-  --primary: oklch(0.62 0.2 258);
+  --radius: 1.1rem;
+  --background: oklch(0.14 0.028 265);
+  --foreground: oklch(0.97 0.01 250);
+  --card: oklch(0.19 0.035 265);
+  --card-foreground: oklch(0.97 0.01 250);
+  --popover: oklch(0.19 0.035 265);
+  --popover-foreground: oklch(0.97 0.01 250);
+  --primary: oklch(0.64 0.2 262);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.26 0.04 265);
-  --secondary-foreground: oklch(0.93 0.01 250);
-  --muted: oklch(0.25 0.035 265);
-  --muted-foreground: oklch(0.72 0.03 255);
-  --accent: oklch(0.8 0.13 85);
-  --accent-foreground: oklch(0.18 0.03 265);
-  --destructive: oklch(0.6 0.22 25);
+  --secondary: oklch(0.22 0.035 265);
+  --secondary-foreground: oklch(0.94 0.01 250);
+  --muted: oklch(0.22 0.03 265);
+  --muted-foreground: oklch(0.7 0.025 255);
+  --accent: oklch(0.82 0.13 88);
+  --accent-foreground: oklch(0.16 0.03 265);
+  --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.32 0.04 265);
-  --input: oklch(0.3 0.04 265);
-  --ring: oklch(0.62 0.2 258);
-  --player: oklch(0.6 0.21 258);
-  --banker: oklch(0.6 0.22 25);
+  --border: oklch(0.28 0.035 265);
+  --input: oklch(0.26 0.035 265);
+  --ring: oklch(0.64 0.2 262);
+  --player: oklch(0.62 0.2 255);
+  --banker: oklch(0.62 0.22 25);
   --tie: var(--gold);
-  --gold: oklch(0.8 0.13 85);
-  --gold-deep: oklch(0.62 0.12 70);
-  --success: oklch(0.72 0.17 150);
+  --gold: oklch(0.82 0.13 88);
+  --gold-deep: oklch(0.64 0.12 72);
+  --success: oklch(0.74 0.17 150);
   --chart-1: var(--player);
   --chart-2: var(--tie);
   --chart-3: var(--banker);
   --chart-4: var(--gold);
   --chart-5: oklch(0.7 0.03 255);
-  --gradient-page: radial-gradient(1200px 600px at 50% -10%, oklch(0.3 0.09 262 / 0.6), transparent 70%), var(--background);
-  --gradient-gold: linear-gradient(135deg, oklch(0.88 0.12 90), var(--gold) 45%, var(--gold-deep));
-  --gradient-primary: linear-gradient(135deg, oklch(0.66 0.2 255), oklch(0.5 0.22 262));
-  --shadow-card: 0 10px 30px -12px oklch(0 0 0 / 0.6);
-  --shadow-glow-player: 0 0 0 2px var(--player), 0 0 28px -4px oklch(0.6 0.21 258 / 0.7);
-  --shadow-glow-banker: 0 0 0 2px var(--banker), 0 0 28px -4px oklch(0.6 0.22 25 / 0.7);
-  --shadow-glow-tie: 0 0 0 2px var(--tie), 0 0 28px -4px oklch(0.72 0.17 150 / 0.6);
+  --gradient-page: radial-gradient(900px 500px at 50% -8%, oklch(0.28 0.09 268 / 0.55), transparent 68%),
+    radial-gradient(700px 400px at 90% 80%, oklch(0.22 0.06 25 / 0.2), transparent 50%),
+    var(--background);
+  --gradient-gold: linear-gradient(135deg, oklch(0.9 0.11 90), var(--gold) 45%, var(--gold-deep));
+  --gradient-primary: linear-gradient(135deg, oklch(0.68 0.19 258), oklch(0.52 0.21 268));
+  --shadow-card: 0 12px 40px -16px oklch(0 0 0 / 0.55);
+  --shadow-glow-player: 0 0 0 2px var(--player), 0 0 28px -4px oklch(0.62 0.2 255 / 0.65);
+  --shadow-glow-banker: 0 0 0 2px var(--banker), 0 0 28px -4px oklch(0.62 0.22 25 / 0.65);
+  --shadow-glow-tie: 0 0 0 2px var(--tie), 0 0 28px -4px oklch(0.74 0.17 150 / 0.55);
   --sidebar: var(--card);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
@@ -130,8 +118,27 @@
     font-family: var(--font-sans);
     min-height: 100vh;
   }
-  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Glass card — subtle frosted glass, not exaggerated */
+@utility glass-card {
+  background: color-mix(in oklab, var(--card) 72%, transparent);
+  border: 1px solid color-mix(in oklab, white 8%, transparent);
+  border-radius: calc(var(--radius) + 6px);
+  box-shadow: var(--shadow-card), inset 0 1px 0 color-mix(in oklab, white 6%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 @utility panel {
@@ -140,24 +147,53 @@
   border-radius: calc(var(--radius) + 4px);
   box-shadow: var(--shadow-card);
 }
+
 @utility text-gold-gradient {
   background: var(--gradient-gold);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-@utility bg-gradient-primary { background: var(--gradient-primary); }
-@utility bg-gradient-gold { background: var(--gradient-gold); }
-@utility glow-player { box-shadow: var(--shadow-glow-player); }
-@utility glow-banker { box-shadow: var(--shadow-glow-banker); }
-@utility glow-tie { box-shadow: var(--shadow-glow-tie); }
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@utility animate-rise { animation: rise 0.45s ease-out both; }
+@utility bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+@utility bg-gradient-gold {
+  background: var(--gradient-gold);
+}
+@utility glow-player {
+  box-shadow: var(--shadow-glow-player);
+}
+@utility glow-banker {
+  box-shadow: var(--shadow-glow-banker);
+}
+@utility glow-tie {
+  box-shadow: var(--shadow-glow-tie);
+}
 
-/* Indicador "Ao vivo": ponto vermelho sempre aceso com brilho a pulsar. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@utility animate-rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes live-glow {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--banker) 70%, transparent), 0 0 6px 1px color-mix(in oklab, var(--banker) 60%, transparent); }
-  50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--banker) 0%, transparent), 0 0 12px 3px color-mix(in oklab, var(--banker) 45%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--banker) 65%, transparent),
+      0 0 6px 1px color-mix(in oklab, var(--banker) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in oklab, var(--banker) 0%, transparent),
+      0 0 12px 3px color-mix(in oklab, var(--banker) 40%, transparent);
+  }
 }
 @utility live-dot {
   background: var(--banker);
@@ -165,44 +201,62 @@
   animation: live-glow 1.8s ease-in-out infinite;
 }
 
-/* Comando do sinal com brilho da cor correspondente. */
-@keyframes signal-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.06); } }
+@keyframes signal-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.05);
+  }
+}
 @utility signal-banker {
-  border-color: color-mix(in oklab, var(--banker) 60%, transparent);
-  background: color-mix(in oklab, var(--banker) 7%, transparent);
-  box-shadow: 0 0 16px -10px color-mix(in oklab, var(--banker) 50%, transparent);
-  text-shadow: none;
-  animation: signal-pulse 2.2s ease-in-out infinite;
+  border-color: color-mix(in oklab, var(--banker) 55%, transparent);
+  background: color-mix(in oklab, var(--banker) 8%, transparent);
+  box-shadow: 0 0 18px -10px color-mix(in oklab, var(--banker) 50%, transparent);
+  animation: signal-pulse 2.4s ease-in-out infinite;
 }
 @utility signal-player {
-  border-color: color-mix(in oklab, var(--player) 60%, transparent);
-  background: color-mix(in oklab, var(--player) 7%, transparent);
-  box-shadow: 0 0 16px -10px color-mix(in oklab, var(--player) 50%, transparent);
-  text-shadow: none;
-  animation: signal-pulse 2.2s ease-in-out infinite;
+  border-color: color-mix(in oklab, var(--player) 55%, transparent);
+  background: color-mix(in oklab, var(--player) 8%, transparent);
+  box-shadow: 0 0 18px -10px color-mix(in oklab, var(--player) 50%, transparent);
+  animation: signal-pulse 2.4s ease-in-out infinite;
 }
 
-/* Números nítidos estilo Apple: SF Display, negrito, tabulares. */
 @utility num {
   font-family: var(--font-display);
   font-weight: 800;
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1, "lnum" 1;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   line-height: 1.05;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Círculo da entrada confirmada com a cor do vencedor e brilho suave. */
 @utility entry-player {
-  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--player) 80%, var(--foreground)), var(--player) 70%);
-  box-shadow: 0 0 0 4px color-mix(in oklab, var(--player) 18%, transparent), 0 0 24px -6px color-mix(in oklab, var(--player) 55%, transparent);
+  background: radial-gradient(
+    circle at 35% 28%,
+    color-mix(in oklab, var(--player) 85%, white),
+    var(--player) 72%
+  );
+  box-shadow: 0 0 0 5px color-mix(in oklab, var(--player) 16%, transparent),
+    0 0 32px -4px color-mix(in oklab, var(--player) 55%, transparent);
 }
 @utility entry-banker {
-  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--banker) 80%, var(--foreground)), var(--banker) 70%);
-  box-shadow: 0 0 0 4px color-mix(in oklab, var(--banker) 18%, transparent), 0 0 24px -6px color-mix(in oklab, var(--banker) 55%, transparent);
+  background: radial-gradient(
+    circle at 35% 28%,
+    color-mix(in oklab, var(--banker) 85%, white),
+    var(--banker) 72%
+  );
+  box-shadow: 0 0 0 5px color-mix(in oklab, var(--banker) 16%, transparent),
+    0 0 32px -4px color-mix(in oklab, var(--banker) 55%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-rise, .signal-banker, .signal-player { animation: none; }
+  .animate-rise,
+  .signal-banker,
+  .signal-player,
+  .live-dot {
+    animation: none;
+  }
 }
